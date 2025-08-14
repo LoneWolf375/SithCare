@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Traslado Urgente - SithCare</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg-1:#0b1020; --bg-2:#111832; --card:rgba(12,16,34,.65);
+      --text:#eef2ff; --muted:#9aa3c7; --brand:#ff6b6b; --brand-2:#ff8aa0;
+      --ok:#22c55e; --ok-2:#16a34a; --danger:#ef4444; --danger-2:#b91c1c;
+      --border:rgba(226,232,240,.14); --ring:rgba(255,107,107,.35);
+      --shadow:0 12px 36px rgba(0,0,0,.5);
+    }
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg-1:#eef3ff; --bg-2:#f7f9ff; --card:rgba(255,255,255,.92);
+        --text:#0f172a; --muted:#475569; --brand:#dc2626; --brand-2:#f97373;
+        --ok:#16a34a; --ok-2:#15803d; --danger:#dc2626; --danger-2:#b91c1c;
+        --border:rgba(30,41,59,.12); --ring:rgba(220,38,38,.25);
+        --shadow:0 12px 36px rgba(31,38,135,.18);
+      }
+    }
+
+    html,body{height:100%}
+    body{
+      margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--text);
+      display:grid; place-items:center; padding:24px;
+      background:
+        radial-gradient(1000px 700px at 12% 8%, var(--bg-2) 0%, transparent 60%),
+        radial-gradient(1000px 700px at 88% 92%, var(--bg-2) 0%, transparent 60%),
+        linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 100%);
+    }
+
+    .wrap{
+      width:min(96vw, 720px);
+      background:var(--card); backdrop-filter: blur(10px);
+      border:1px solid var(--border); border-radius:24px;
+      box-shadow:var(--shadow); padding:28px 24px;
+      text-align:center;
+    }
+
+    .alert-icon{
+      width:84px; height:84px; border-radius:999px; display:grid; place-items:center;
+      background:linear-gradient(180deg,var(--brand),var(--brand-2));
+      color:#fff; font-size:42px; margin: 2px auto 14px;
+      box-shadow:0 12px 28px rgba(255,107,107,.25);
+    }
+
+    h2{ font-weight:800; margin:0 0 6px; }
+    .subtle{ color:var(--muted); font-size:.95rem; margin-bottom:16px; }
+
+    /* Botones */
+    .btn-lgx{
+      padding:1rem 1.1rem; font-weight:800; border-radius:14px; min-width:260px;
+      transition: transform .05s ease, box-shadow .2s ease;
+    }
+    .btn-lgx:focus-visible{ box-shadow:0 0 0 .35rem var(--ring); outline:none; }
+    .btn-lgx:hover{ transform: translateY(-1px); }
+
+    .btn-ok{
+      background: linear-gradient(180deg, var(--ok), var(--ok-2)); border:none; color:#fff;
+      box-shadow:0 12px 28px rgba(34,197,94,.25);
+    }
+    .btn-dangerx{
+      background: linear-gradient(180deg, var(--danger), var(--danger-2)); border:none; color:#fff;
+      box-shadow:0 12px 28px rgba(239,68,68,.25);
+    }
+
+    .note{
+      display:flex; gap:10px; align-items:flex-start; justify-content:center;
+      color:var(--muted); font-size:.92rem; margin-top:16px;
+    }
+    .note .dot{ width:8px; height:8px; border-radius:999px; background:var(--muted); margin-top:.45rem; opacity:.7; }
+  </style>
+</head>
+<body>
+
+  <main class="wrap" role="main" aria-labelledby="tituloTraslado">
+    <div class="alert-icon" aria-hidden="true">!</div>
+    <h2 id="tituloTraslado">¿Puedes trasladarte al centro de urgencia?</h2>
+    <p class="subtle">Tu evaluación sugiere atención inmediata. Elige una opción para continuar.</p>
+
+    <div class="d-flex flex-column flex-sm-row justify-content-center gap-3 mt-2">
+      <button class="btn btn-lgx btn-ok" onclick="trasladoConfirmado()" aria-label="Sí, puedo trasladarme">
+        Sí, puedo trasladarme
+      </button>
+      <button class="btn btn-lgx btn-dangerx" onclick="profesionalEnviado()" aria-label="No, necesito atención en casa">
+        No, necesito atención en casa
+      </button>
+    </div>
+
+    <div class="note">
+      <span class="dot"></span>
+      <span>Si presentas dolor torácico intenso, dificultad respiratoria severa o pérdida de conciencia, **llama a emergencias de inmediato**.</span>
+    </div>
+  </main>
+
+  <script>
+    function trasladoConfirmado() {
+      window.location.href = "/traslado_confirmado/";
+    }
+    function profesionalEnviado() {
+      window.location.href = "/profesional_enviado/";
+    }
+  </script>
+</body>
+</html>

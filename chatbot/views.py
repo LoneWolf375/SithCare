@@ -20,32 +20,24 @@ def chatbot_preguntas(request):
     ]
     return Response({"preguntas": preguntas}, status=status.HTTP_200_OK)
 
-
 @api_view(['POST'])
 def chatbot_evaluar_respuestas(request):
-    """
-    Evalúa las respuestas del usuario y clasifica en urgente o no urgente.
-    Incluye score.
-    """
-    respuestas = request.data.get('respuestas')
+    respuestas_obj = request.data.get('respuestas', {})
 
-    if not isinstance(respuestas, list):
-        return Response(
-            {"error": "El formato debe ser una lista de valores True/False."},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+    respuestas = [
+        respuestas_obj.get('dificultadRespirar', False),
+        respuestas_obj.get('dolorPecho', False),
+        respuestas_obj.get('confusion', False),
+        respuestas_obj.get('trauma', False),
+        respuestas_obj.get('fiebreAlta', False),
+        respuestas_obj.get('dolorIntenso', False),
+        respuestas_obj.get('vomitosDiarrea', False),
+        respuestas_obj.get('enfermedadCronica', False)
+    ]
 
-    if len(respuestas) != 8:
-        return Response(
-            {"error": "Se esperaban 8 respuestas, en el mismo orden de las preguntas."},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    # Peso por pregunta (ajustado a lógica combinada)
     pesos = [5, 5, 5, 3, 4, 5, 2, 1]
     score = sum([peso for respuesta, peso in zip(respuestas, pesos) if respuesta])
 
-    # Flags críticos
     indices_criticos = [0, 1, 2, 3, 4, 5, 6]
     es_urgencia_flag = any([respuestas[i] for i in indices_criticos])
     es_urgencia_score = score >= 5
@@ -65,8 +57,20 @@ def chatbot_evaluar_respuestas(request):
             "score": score
         }
 
-    return Response(resultado, status=status.HTTP_200_OK)
+    return Response({
+        "urgente": resultado["urgente"],
+        "resultado": resultado["mensaje"]
+    }, status=status.HTTP_200_OK)
 
+@api_view(['POST'])
+def chatbot_guardar_parcial(request):
+    respuestas = request.data.get('respuestas')
+
+    if not isinstance(respuestas, list) or len(respuestas) != 8:
+        return Response({"error": "Debe enviar una lista de 8 respuestas."}, status=400)
+
+    # Aquí podrías guardar en base de datos si lo deseas (o no hacer nada todavía)
+    return Response({"mensaje": "Primera parte del triaje registrada."}, status=200)
 
 @api_view(['POST'])
 def chatbot_resolver_traslado(request):

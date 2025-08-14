@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Evaluación de Triaje - SithCare</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root{
+      --bg-1:#0b1020; --bg-2:#111832; --card:rgba(12,16,34,.65);
+      --text:#eef2ff; --muted:#9aa3c7; --brand:#6b8bff; --brand-2:#8aa0ff;
+      --border:rgba(226,232,240,.14); --ring:rgba(107,139,255,.45);
+      --shadow:0 12px 36px rgba(0,0,0,.5);
+      --ok:#22c55e; --ok-2:#16a34a; --no:#94a3b8;
+    }
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg-1:#eef3ff; --bg-2:#f7f9ff; --card:rgba(255,255,255,.9);
+        --text:#0f172a; --muted:#475569; --brand:#2e5bff; --brand-2:#6b7bff;
+        --border:rgba(30,41,59,.12); --ring:rgba(46,91,255,.35);
+        --shadow:0 12px 36px rgba(31,38,135,.18);
+        --ok:#16a34a; --ok-2:#15803d; --no:#64748b;
+      }
+    }
+
+    html,body{height:100%}
+    body{
+      margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--text);
+      display:grid; place-items:center; padding:24px;
+      background:
+        radial-gradient(1000px 700px at 12% 8%, var(--bg-2) 0%, transparent 60%),
+        radial-gradient(1000px 700px at 88% 92%, var(--bg-2) 0%, transparent 60%),
+        linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 100%);
+    }
+
+    .wrap{
+      width:min(96vw, 720px);
+      background:var(--card); backdrop-filter: blur(10px);
+      border:1px solid var(--border); border-radius:24px;
+      box-shadow:var(--shadow); padding:28px 24px;
+    }
+
+    h2{ font-weight:800; margin:0 0 6px; text-align:center; }
+    .subtle{ color:var(--muted); font-size:.95rem; text-align:center; margin-bottom:18px; }
+
+    /* progress */
+    .progress{
+      height:10px; background:rgba(148,163,184,.25); border-radius:999px; overflow:hidden;
+    }
+    .progress-bar{
+      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+    }
+
+    .card-like{
+      border:1px solid var(--border);
+      border-radius:16px;
+      background: rgba(255,255,255,.04);
+      padding:20px;
+    }
+
+    .q-text{ font-size:1.25rem; font-weight:700; }
+
+    .btn-yn{
+      min-width:140px; padding:.8rem 1rem; font-weight:700; border-radius:14px;
+      transition: transform .05s ease, box-shadow .2s ease;
+    }
+    .btn-yn:focus-visible{ box-shadow:0 0 0 .35rem var(--ring); outline:none; }
+    .btn-yn:hover{ transform: translateY(-1px); }
+
+    .btn-si{
+      background: linear-gradient(180deg, var(--ok), var(--ok-2)); border:none; color:#fff;
+      box-shadow:0 12px 28px rgba(34,197,94,.25);
+    }
+    .btn-no{
+      background: transparent; color: var(--no); border:1px solid var(--no);
+    }
+
+    .btn-back{
+      color: var(--muted); text-decoration:none; border:none; background:transparent; padding:.5rem .25rem;
+    }
+    .btn-back:hover{ color: var(--text); text-decoration:underline; }
+
+    /* util */
+    .row-meta{ color:var(--muted); font-size:.9rem; }
+  </style>
+</head>
+<body>
+
+  <main class="wrap">
+    <h2>Evaluación de Triaje Médico</h2>
+    <p class="subtle">Responde con honestidad. Al elegir <b>Sí</b> o <b>No</b> avanzarás automáticamente.</p>
+
+    <!-- Barra de progreso -->
+    <div class="progress mb-4" role="progressbar" aria-label="Progreso de triaje">
+      <div id="barra" class="progress-bar" style="width: 0%"></div>
+    </div>
+
+    <div id="formulario-preguntas" class="card-like">
+      <div class="d-flex justify-content-between align-items-center mb-3 row-meta">
+        <div>Evaluación</div>
+        <div id="progreso">Pregunta 1 de 8</div>
+      </div>
+
+      <div id="q-text" class="q-text mb-4"></div>
+
+      <div class="d-flex align-items-center gap-3">
+        <button id="btn-si" class="btn-yn btn-si">Sí</button>
+        <button id="btn-no" class="btn-yn btn-no">No</button>
+        <button id="btn-atras" class="btn-back ms-auto" type="button" aria-label="Volver a la pregunta anterior">← Atrás</button>
+      </div>
+    </div>
+
+    <div id="respuesta" class="mt-3"></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    // Protege la página
+    window.onload = function() {
+      if (!localStorage.getItem("authToken")) {
+        window.location.href = "/login/";
+      }
+    };
+
+    // --- PREGUNTAS ---
+    const preguntas = [
+      "¿Presentas dificultad para respirar?",
+      "¿Presentas dolor en el pecho?",
+      "¿Presentas confusión o desorientación?",
+      "¿Has sufrido un trauma reciente grave?",
+      "¿Sientes fiebre alta (sobre 38.5 °C)?",
+      "¿Tienes dolor muy intenso (8 o más de 10)?",
+      "¿Has tenido vómitos o diarreas intensos y persistentes (más de 6 episodios en 24 horas)?",
+      "¿Padeces alguna enfermedad crónica?"
+    ];
+
+    // Claves esperadas por el backend (sin cambios)
+    const keys = [
+      "dificultadRespirar",
+      "dolorPecho",
+      "confusion",
+      "trauma",
+      "fiebreAlta",
+      "dolorIntenso",
+      "vomitosDiarrea",
+      "enfermedadCronica"
+    ];
+
+    // Estado
+    let i = 0;
+    const almacenadas = sessionStorage.getItem('triajeRespuestas');
+    const respuestas = almacenadas ? JSON.parse(almacenadas) : new Array(preguntas.length).fill(null);
+    const primeroPendiente = respuestas.findIndex(v => v === null);
+    if (primeroPendiente !== -1) i = primeroPendiente;
+
+    // Elementos
+    const qText = document.getElementById('q-text');
+    const progreso = document.getElementById('progreso');
+    const btnSi = document.getElementById('btn-si');
+    const btnNo = document.getElementById('btn-no');
+    const btnAtras = document.getElementById('btn-atras');
+    const barra = document.getElementById('barra');
+
+    function render() {
+      qText.textContent = preguntas[i];
+      progreso.textContent = `Pregunta ${i+1} de ${preguntas.length}`;
+      const pct = Math.round((i / preguntas.length) * 100);
+      barra.style.width = pct + '%';
+      btnAtras.disabled = (i === 0);
+      btnAtras.style.opacity = (i === 0) ? .45 : 1;
+    }
+
+    function guardarYSeguir(valor) {
+      respuestas[i] = valor;
+      sessionStorage.setItem('triajeRespuestas', JSON.stringify(respuestas));
+      i++;
+      if (i < preguntas.length) {
+        render();
+      } else {
+        barra.style.width = '100%';
+        enviarTriaje();
+      }
+    }
+
+    btnAtras.addEventListener('click', () => {
+      if (i > 0) {
+        i -= 1;
+        respuestas[i] = null; // opcional: desmarca la anterior
+        sessionStorage.setItem('triajeRespuestas', JSON.stringify(respuestas));
+        render();
+      }
+    });
+
+    // Envío al backend (sin cambios)
+    function enviarTriaje() {
+      const usuario_id = localStorage.getItem("usuario_id");
+      const token = localStorage.getItem("authToken");
+
+      if (!usuario_id || !token) {
+        alert("❌ No has iniciado sesión o la sesión ha expirado. Redirigiendo al login.");
+        window.location.href = "/login/";
+        return;
+      }
+
+      const data = { usuario_id: parseInt(usuario_id) };
+      keys.forEach((k, idx) => { data[k] = !!respuestas[idx]; });
+
+      axios.post("http://127.0.0.1:8000/api/usuarios/registrar-sintoma/", data, {
+        headers: { 'Authorization': `Token ${token}` }
+      })
+      .then(res => {
+        const resultado = res.data.resultado;
+        const esUrgencia = res.data.urgente === true;
+
+        document.getElementById("respuesta").innerHTML =
+          `<div class="alert alert-success">${resultado}</div>`;
+
+        setTimeout(() => {
+          if (esUrgencia) {
+            window.location.href = "/traslado_urgente/";
+          } else {
+            window.location.href = "/agendamiento/";
+          }
+        }, 1000);
+      })
+      .catch(err => {
+        const msg = err.response?.data?.error || 'Error desconocido. Revisa los datos enviados.';
+        document.getElementById("respuesta").innerHTML =
+          `<div class="alert alert-danger">${msg}</div>`;
+
+        if (err.response && err.response.status === 401) {
+          localStorage.removeItem("authToken");
+          localStorage.removeItem("usuario_id");
+          window.location.href = "/login/";
+        }
+      });
+    }
+
+    // Listeners
+    btnSi.addEventListener('click', () => guardarYSeguir(true));
+    btnNo.addEventListener('click', () => guardarYSeguir(false));
+
+    // Atajos de teclado: S/N o flechas
+    document.addEventListener('keydown', (e) => {
+      const k = e.key.toLowerCase();
+      if (k === 's' || e.key === 'ArrowRight') guardarYSeguir(true);
+      if (k === 'n' || e.key === 'ArrowLeft')  guardarYSeguir(false);
+    });
+
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SithCare | Bienvenido</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="icon" href="{% static 'assets/img/sithcare_logo.PNG' %}">
+  <style>
+    :root{
+      --bg-1: #eef3ff;
+      --bg-2: #f7f9ff;
+      --card-bg: rgba(255,255,255,.72);
+      --text: #1c1f27;
+      --muted:#5a6275;
+      --brand:#2e5bff;
+      --brand-2:#6b7bff;
+      --ring: rgba(46,91,255,.35);
+      --border: rgba(30,41,59,.12);
+      --shadow: 0 10px 30px rgba(31, 38, 135, .15);
+      --shadow-strong: 0 18px 40px rgba(46, 91, 255, .20);
+    }
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg-1:#0b1020;
+        --bg-2:#111832;
+        --card-bg: rgba(12,16,34,.6);
+        --text:#eef2ff;
+        --muted:#a3adcc;
+        --brand:#6b8bff;
+        --brand-2:#8aa0ff;
+        --ring: rgba(107,139,255,.45);
+        --border: rgba(226,232,240,.15);
+        --shadow: 0 10px 30px rgba(0,0,0,.35);
+        --shadow-strong: 0 18px 40px rgba(0,0,0,.55);
+      }
+    }
+
+    *{ box-sizing: border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      display:grid;
+      place-items:center;
+      background:
+        radial-gradient(1200px 800px at 10% 10%, var(--bg-2) 0%, transparent 60%),
+        radial-gradient(1200px 800px at 90% 90%, var(--bg-2) 0%, transparent 60%),
+        linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 100%);
+      overflow:hidden;
+    }
+    /* sutil “grano” para dar textura */
+    body::before{
+      content:"";
+      position:fixed; inset:0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' opacity='0.05' width='160' height='160'%3E%3Cdefs%3E%3Cpattern id='p' width='40' height='40' patternUnits='userSpaceOnUse'%3E%3Ccircle cx='1' cy='1' r='1' fill='%23000'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23p)'/%3E%3C/svg%3E");
+      pointer-events:none;
+    }
+
+    .container{
+      width:min(92vw, 440px);
+      padding:28px 24px 26px;
+      border-radius:24px;
+      background: var(--card-bg);
+      border:1px solid var(--border);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      text-align:center;
+      animation: rise .5s ease-out forwards;
+    }
+    @keyframes rise{
+      from{ transform:translateY(10px); opacity:0; }
+      to{ transform:translateY(0); opacity:1; }
+    }
+    @media (prefers-reduced-motion: reduce){
+      .container{ animation:none; }
+    }
+
+    .logo{
+      display:block;
+      width:220px; max-width:70%;
+      margin:4px auto 16px;
+      filter: drop-shadow(0 6px 18px rgba(0,0,0,.08));
+      user-select:none;
+    }
+
+    .title{
+      font-size: clamp(20px, 2.2vw + 12px, 26px);
+      font-weight:800;
+      letter-spacing:.2px;
+      margin:4px 0 6px;
+    }
+    .subtitle{
+      font-size:16px;
+      color:var(--muted);
+      margin:0 0 22px;
+    }
+
+    .btn{
+      appearance:none;
+      width:100%;
+      border:1px solid transparent;
+      border-radius:14px;
+      padding:14px 16px;
+      font-weight:600;
+      font-size:16px;
+      cursor:pointer;
+      transition: transform .06s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+      margin:12px 0;
+    }
+    .btn:focus-visible{
+      outline:none;
+      box-shadow:0 0 0 6px var(--ring);
+    }
+    .btn.primary{
+      background: linear-gradient(180deg, var(--brand), var(--brand-2));
+      color:#fff;
+      box-shadow: var(--shadow-strong);
+    }
+    .btn.primary:hover{ transform: translateY(-1px); }
+    .btn.secondary{
+      background: transparent;
+      color: var(--brand);
+      border-color: var(--brand);
+    }
+    .btn.secondary:hover{
+      background: rgba(46,91,255,.06);
+    }
+
+    /* pie pequeño opcional */
+    .meta{
+      margin-top: 12px;
+      font-size:12px;
+      color:var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="container" id="mainContainer" role="main" aria-labelledby="title">
+    <img src="{% static 'assets/img/sithcare_logo.PNG' %}" alt="Logo de SithCare" class="logo" loading="eager">
+    <h1 id="title" class="title">Bienvenido a SithCare</h1>
+    <p class="subtitle">Tu salud comienza con una conversación</p>
+
+    <button class="btn primary" onclick="location.href='/registro/'">
+      Registrar usuario
+    </button>
+    <button class="btn secondary" onclick="location.href='/login/'">
+      Iniciar sesión
+    </button>
+
+    <p class="meta">v0.1 · MVP</p>
+  </main>
+</body>
+</html>

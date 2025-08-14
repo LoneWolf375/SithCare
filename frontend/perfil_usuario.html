@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Perfil de Usuario - SithCare</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root{
+      --bg-1:#0b1020; --bg-2:#111832; --card:rgba(12,16,34,.65);
+      --text:#eef2ff; --muted:#9aa3c7; --brand:#6b8bff; --brand-2:#8aa0ff;
+      --border:rgba(226,232,240,.14); --ring:rgba(107,139,255,.45);
+      --shadow:0 12px 36px rgba(0,0,0,.5);
+      --danger:#ef4444; --success:#22c55e; --warn:#f59e0b;
+    }
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg-1:#eef3ff; --bg-2:#f7f9ff; --card:rgba(255,255,255,.9);
+        --text:#0f172a; --muted:#475569; --brand:#2e5bff; --brand-2:#6b7bff;
+        --border:rgba(30,41,59,.12); --ring:rgba(46,91,255,.35);
+        --shadow:0 12px 36px rgba(31,38,135,.18);
+        --danger:#dc2626; --success:#16a34a; --warn:#d97706;
+      }
+    }
+
+    html,body{height:100%}
+    body{
+      margin:0; color:var(--text);
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      display:grid; place-items:center; padding:24px;
+      background:
+        radial-gradient(1000px 700px at 12% 8%, var(--bg-2) 0%, transparent 60%),
+        radial-gradient(1000px 700px at 88% 92%, var(--bg-2) 0%, transparent 60%),
+        linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 100%);
+    }
+
+    .profile-container{
+      width:min(96vw, 820px);
+      background:var(--card); backdrop-filter: blur(10px);
+      border:1px solid var(--border); border-radius:24px;
+      box-shadow:var(--shadow); padding:26px 22px;
+    }
+
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px; font-weight:800;
+    }
+    .brand .dot{ width:10px; height:10px; border-radius:999px; background:linear-gradient(180deg,var(--brand),var(--brand-2)); }
+
+    .actions a{
+      color:var(--text); text-decoration:none; margin-left:10px;
+      border:1px solid var(--border); padding:.4rem .65rem; border-radius:12px;
+      background:rgba(255,255,255,.05);
+    }
+    .actions a:hover{ box-shadow:0 0 0 .25rem var(--ring); }
+
+    /* Header perfil */
+    .profile-header{
+      display:flex; align-items:center; gap:16px; margin:10px 0 14px;
+    }
+    .avatar{
+      width:84px; height:84px; border-radius:50%;
+      box-shadow:0 10px 24px rgba(0,0,0,.25); object-fit:cover;
+    }
+    .header-info h4{ font-weight:800; margin:0 }
+    .badges{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+    .badge-chip{
+      display:inline-flex; align-items:center; gap:6px; padding:.25rem .5rem; border-radius:999px;
+      background:rgba(255,255,255,.06); border:1px solid var(--border); color:var(--text); font-weight:600; font-size:.85rem;
+    }
+    .badge-chip.ok{ border-color:rgba(34,197,94,.45); }
+    .badge-chip.warn{ border-color:rgba(245,158,11,.5); }
+
+    /* Barra completitud */
+    .card-lite{
+      border:1px solid var(--border); border-radius:16px; background:rgba(255,255,255,.04); padding:14px;
+    }
+    .progress{ height:10px; background:rgba(148,163,184,.25); border-radius:999px; overflow:hidden; }
+    .progress-bar{ background: linear-gradient(90deg, var(--brand), var(--brand-2)); }
+
+    /* Inputs */
+    .input-group-text{ min-width:200px; font-weight:600; border-color:var(--border); background:rgba(255,255,255,.06); color:var(--text); }
+    .form-control{
+      background:rgba(255,255,255,.08); color:var(--text);
+      border:1px solid var(--border); border-radius:12px;
+    }
+    .form-control[readonly]{ opacity:.9 }
+    .form-control:focus{ box-shadow:0 0 0 .35rem var(--ring); border-color:transparent; }
+
+    /* Botones utilitarios */
+    .btn-outline-secondary{
+      border:1px solid var(--border); color:var(--muted); background:transparent;
+    }
+    .btn-outline-secondary:hover{ color:var(--text); }
+    .btn-icon{
+      border:1px solid var(--border); background:transparent; color:var(--text);
+      border-radius:10px; padding:.45rem .6rem;
+    }
+    .btn-icon:hover{ box-shadow:0 0 0 .25rem var(--ring); }
+
+    /* Botones acción principal */
+    .btn-save{
+      background: linear-gradient(180deg,var(--success), #16a34a);
+      border:none; color:#fff; font-weight:700; border-radius:12px;
+      padding:.85rem 1rem; box-shadow:0 12px 28px rgba(34,197,94,.25);
+    }
+    .btn-save:focus{ box-shadow:0 0 0 .35rem var(--ring); }
+    .btn-logout{
+      background: linear-gradient(180deg,var(--danger), #b91c1c);
+      border:none; color:#fff; font-weight:700; border-radius:12px;
+      padding:.85rem 1rem; box-shadow:0 12px 28px rgba(239,68,68,.25);
+    }
+    .btn-logout:focus{ box-shadow:0 0 0 .35rem var(--ring); }
+
+    /* Toasts */
+    .toast-container{ position: fixed; top: 16px; right: 16px; z-index: 2000; }
+    .toast{ background:var(--card); color:var(--text); border:1px solid var(--border); }
+
+    /* Skeleton (carga) */
+    .skeleton{ background:linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.12), rgba(255,255,255,.06)); background-size:200% 100%; animation: shimmer 1.2s infinite; border-radius:8px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  </style>
+</head>
+<body>
+  <div class="profile-container">
+    <div class="topbar">
+      <div class="brand"><span class="dot"></span> <span>Tu perfil</span></div>
+      <div class="actions">
+        <a href="/" title="Inicio"><i class="fas fa-home"></i></a>
+        <a href="/agendamiento/" title="Agendar"><i class="fas fa-calendar-plus"></i></a>
+        <a href="/login/" title="Cambiar usuario"><i class="fas fa-right-to-bracket"></i></a>
+      </div>
+    </div>
+
+    <!-- Header perfil -->
+    <div class="profile-header">
+      <img id="avatarImg" class="avatar" src="https://cdn-icons-png.flaticon.com/512/9131/9131529.png" alt="Avatar de Usuario">
+      <div class="header-info">
+        <h4 id="nombreUsuario" class="skeleton" style="width:220px;height:22px;"></h4>
+        <div class="badges">
+          <!-- Badges se actualizan desde JS si API trae banderas -->
+          <span id="badgeEmail" class="badge-chip warn" style="display:none;"><i class="fa-solid fa-envelope"></i> Email no verificado</span>
+          <span id="badgePhone" class="badge-chip warn" style="display:none;"><i class="fa-solid fa-phone"></i> Teléfono no verificado</span>
+          <span id="badgeEmailOk" class="badge-chip ok" style="display:none;"><i class="fa-solid fa-circle-check"></i> Email verificado</span>
+          <span id="badgePhoneOk" class="badge-chip ok" style="display:none;"><i class="fa-solid fa-circle-check"></i> Teléfono verificado</span>
+        </div>
+      </div>
+      <button id="btnCambiarAvatar" class="btn-icon ms-auto" type="button" title="Cambiar avatar"><i class="fa-solid fa-image"></i></button>
+    </div>
+
+    <!-- Completitud del perfil -->
+    <div class="card-lite mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <div class="subtle">Completitud del perfil</div>
+        <div id="lblPct" class="subtle">0%</div>
+      </div>
+      <div class="progress">
+        <div id="barPct" class="progress-bar" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Campos -->
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="input-group">
+          <span class="input-group-text"><i class="fa-solid fa-id-card me-2"></i> RUT</span>
+          <input type="text" id="rutCampo" class="form-control" readonly>
+          <button class="btn btn-outline-secondary" type="button" onclick="toggleCampo('rutCampo', this)" aria-label="Mostrar/ocultar RUT">
+            <i class="fas fa-eye-slash"></i>
+          </button>
+          <button class="btn btn-outline-secondary" type="button" onclick="copiar('rutCampo')" title="Copiar RUT"><i class="fa-regular fa-copy"></i></button>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="input-group">
+          <span class="input-group-text"><i class="fa-solid fa-phone me-2"></i> Teléfono</span>
+          <input type="text" id="telefonoCampo" class="form-control" readonly>
+          <button class="btn btn-outline-secondary" type="button" onclick="toggleCampo('telefonoCampo', this)" aria-label="Mostrar/ocultar teléfono">
+            <i class="fas fa-eye-slash"></i>
+          </button>
+          <button class="btn btn-outline-secondary" type="button" onclick="copiar('telefonoCampo')" title="Copiar teléfono"><i class="fa-regular fa-copy"></i></button>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="input-group">
+          <span class="input-group-text"><i class="fa-solid fa-notes-medical me-2"></i> Enfermedades Sistémicas</span>
+          <input type="text" id="enfermedadesCampo" class="form-control" placeholder="Ej: Diabetes, Hipertensión">
+          <button class="btn btn-outline-secondary" type="button" onclick="toggleCampo('enfermedadesCampo', this)" aria-label="Mostrar/ocultar enfermedades sistémicas">
+            <i class="fas fa-eye-slash"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="input-group">
+          <span class="input-group-text"><i class="fa-solid fa-droplet me-2"></i> Tipo de Sangre</span>
+          <input type="text" id="sangreCampo" class="form-control" placeholder="Ej: A+, O-">
+          <button class="btn btn-outline-secondary" type="button" onclick="toggleCampo('sangreCampo', this)" aria-label="Mostrar/ocultar tipo de sangre">
+            <i class="fas fa-eye-slash"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">Próxima Cita</label>
+        <input type="text" id="proximaCita" class="form-control" readonly>
+      </div>
+    </div>
+
+    <div id="mensajeError" class="alert alert-danger d-none mt-3" role="alert"></div>
+
+    <div class="d-grid gap-2 mt-3">
+      <button class="btn btn-save" onclick="guardarPerfil()">Guardar cambios</button>
+      <button class="btn btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="toast-container">
+    <div id="toastInfo" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body" id="toastMsg">Operación realizada.</div>
+        <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function showToast(msg){
+      const el = document.getElementById('toastInfo');
+      document.getElementById('toastMsg').textContent = msg;
+      const toast = new bootstrap.Toast(el, { delay: 2200 });
+      toast.show();
+    }
+
+    function copiar(id){
+      const el = document.getElementById(id);
+      const tmp = document.createElement('input');
+      tmp.value = el.dataset.oculto === "true" ? (el.dataset.valorCompleto || el.value) : el.value;
+      document.body.appendChild(tmp); tmp.select();
+      try { document.execCommand('copy'); showToast('Copiado al portapapeles'); }
+      catch(e){ showToast('No se pudo copiar'); }
+      finally { document.body.removeChild(tmp); }
+    }
+
+    function cerrarSesion() {
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("usuario_id");
+      localStorage.removeItem("username");
+      showToast('Sesión cerrada');
+      setTimeout(()=> window.location.href = "/login/", 400);
+    }
+
+    // Mostrar/ocultar campo con icono ojo (mantiene tu lógica)
+    function toggleCampo(inputId, boton) {
+      const input = document.getElementById(inputId);
+      const icono = boton.querySelector("i");
+      if (input.dataset.oculto === "true") {
+        input.value = input.dataset.valorCompleto;
+        input.dataset.oculto = "false";
+        icono.classList.remove("fa-eye-slash");
+        icono.classList.add("fa-eye");
+      } else {
+        input.value = input.dataset.valorOculto;
+        input.dataset.oculto = "true";
+        icono.classList.remove("fa-eye");
+        icono.classList.add("fa-eye-slash");
+      }
+      actualizarCompletitud(); // por si el usuario cambió valores
+    }
+
+    // Cambiar avatar (local, opcional)
+    document.getElementById('btnCambiarAvatar').addEventListener('click', ()=>{
+      const url = prompt('Pega la URL de la imagen para tu avatar (se guardará localmente hasta que cierres sesión):');
+      if(!url) return;
+      const img = document.getElementById('avatarImg');
+      img.src = url;
+      showToast('Avatar actualizado (local)');
+    });
+
+    // Carga de perfil (con mejoras visuales y badges opcionales)
+    async function cargarPerfil() {
+      const token = localStorage.getItem("authToken");
+      const mensajeErrorDiv = document.getElementById("mensajeError");
+      mensajeErrorDiv.classList.add("d-none");
+      if (!token) {
+        window.location.href = "/login/";
+        return;
+      }
+      try {
+        const resp = await fetch("http://127.0.0.1:8000/api/usuarios/perfil/", {
+          method: "GET",
+          headers: { "Authorization": `Token ${token}` }
+        });
+        if (!resp.ok) {
+          if (resp.status === 401) {
+            alert("Sesión expirada. Por favor, inicia sesión nuevamente.");
+            localStorage.removeItem("authToken");
+            window.location.href = "/login/";
+          } else {
+            throw new Error(`Error en el servidor: ${resp.status} ${resp.statusText}`);
+          }
+        }
+        const data = await resp.json();
+
+        // Nombre
+        const nombreEl = document.getElementById("nombreUsuario");
+        nombreEl.classList.remove('skeleton'); nombreEl.style.height = 'auto';
+        nombreEl.textContent = data.nombre || "Usuario";
+
+        // Badges (si tu API los expone; si no, se quedan ocultos)
+        if (data.email_verificado === true) {
+          document.getElementById('badgeEmailOk').style.display = 'inline-flex';
+        } else if (data.email !== undefined) {
+          document.getElementById('badgeEmail').style.display = 'inline-flex';
+        }
+        if (data.telefono_verificado === true) {
+          document.getElementById('badgePhoneOk').style.display = 'inline-flex';
+        } else if (data.telefono !== undefined) {
+          document.getElementById('badgePhone').style.display = 'inline-flex';
+        }
+
+        // RUT
+        const rutCompleto = data.rut || "N/A";
+        const rutOculto = rutCompleto.length > 5 ? rutCompleto.substring(0, 3) + "***" + rutCompleto.substring(rutCompleto.length - 2) : rutCompleto;
+        const rutCampo = document.getElementById("rutCampo");
+        rutCampo.value = rutOculto;
+        rutCampo.dataset.valorCompleto = rutCompleto;
+        rutCampo.dataset.valorOculto = rutOculto;
+        rutCampo.dataset.oculto = "true";
+
+        // Teléfono
+        const telefonoCompleto = data.telefono || 'No especificado';
+        const telefonoOculto = telefonoCompleto.length > 5 ? telefonoCompleto.substring(0, 5) + "****" : telefonoCompleto;
+        const telCampo = document.getElementById("telefonoCampo");
+        telCampo.value = telefonoOculto;
+        telCampo.dataset.valorCompleto = telefonoCompleto;
+        telCampo.dataset.valorOculto = telefonoOculto;
+        telCampo.dataset.oculto = "true";
+
+        // Enfermedades y sangre (editables)
+        const enfermedadesCompletas = data.enfermedades_sistemicas || 'No especificado';
+        const sangreCompleta = data.tipo_de_sangre || 'No especificado';
+        const enfermedadesOcultas = (enfermedadesCompletas.length > 3) ? enfermedadesCompletas.slice(0, 3) + "***" : enfermedadesCompletas;
+        const sangreOculta = (sangreCompleta.length > 1) ? sangreCompleta.slice(0, 1) + "**" : sangreCompleta;
+
+        const enfCampo = document.getElementById("enfermedadesCampo");
+        enfCampo.value = enfermedadesOcultas;
+        enfCampo.dataset.valorCompleto = enfermedadesCompletas;
+        enfCampo.dataset.valorOculto = enfermedadesOcultas;
+        enfCampo.dataset.oculto = "true";
+
+        const sangCampo = document.getElementById("sangreCampo");
+        sangCampo.value = sangreOculta;
+        sangCampo.dataset.valorCompleto = sangreCompleta;
+        sangCampo.dataset.valorOculto = sangreOculta;
+        sangCampo.dataset.oculto = "true";
+
+        // Próxima cita
+        if (data.proxima_cita) {
+          document.getElementById("proximaCita").value = `Fecha: ${data.proxima_cita.fecha}, Hora: ${data.proxima_cita.hora}`;
+        } else {
+          document.getElementById("proximaCita").value = "Sin citas agendadas.";
+        }
+
+        actualizarCompletitud(data);
+      } catch (error) {
+        console.error("Error al obtener perfil:", error);
+        const msgDiv = document.getElementById("mensajeError");
+        msgDiv.innerText = `Ocurrió un error al cargar los datos: ${error.message}`;
+        msgDiv.classList.remove("d-none");
+        if (error.message.includes("401")) {
+          localStorage.removeItem("authToken");
+          window.location.href = "/login/";
+        }
+      }
+    }
+
+    function porcentajeCompletitud(data){
+      // Campos considerados para el % (ajusta a tu gusto)
+      const checks = [
+        !!(data?.nombre),
+        !!(data?.rut),
+        !!(data?.telefono),
+        !!(data?.enfermedades_sistemicas),
+        !!(data?.tipo_de_sangre),
+        !!(data?.email),
+      ];
+      const ok = checks.filter(Boolean).length;
+      return Math.round((ok / checks.length) * 100);
+    }
+
+    function actualizarCompletitud(data){
+      // Si no recibimos data (por cambios locales), intentamos reconstruir algo básico
+      let pct = 0;
+      if (data) {
+        pct = porcentajeCompletitud(data);
+      } else {
+        // heurística mínima basándonos en inputs
+        const nombre = document.getElementById('nombreUsuario')?.textContent || '';
+        const rut = document.getElementById('rutCampo')?.dataset?.valorCompleto || '';
+        const tel = document.getElementById('telefonoCampo')?.dataset?.valorCompleto || '';
+        const enf = document.getElementById('enfermedadesCampo')?.value || '';
+        const sang = document.getElementById('sangreCampo')?.value || '';
+        const checks = [!!nombre, !!rut, !!tel, !!enf, !!sang];
+        pct = Math.round((checks.filter(Boolean).length / checks.length) * 100);
+      }
+      document.getElementById('barPct').style.width = pct + '%';
+      document.getElementById('lblPct').textContent = pct + '%';
+    }
+
+    async function guardarPerfil() {
+      const token = localStorage.getItem("authToken");
+      const usuario_id = localStorage.getItem("usuario_id");
+      const mensajeErrorDiv = document.getElementById("mensajeError");
+      mensajeErrorDiv.classList.add("d-none");
+      if (!token || !usuario_id) {
+        alert("No has iniciado sesión o la sesión ha expirado.");
+        window.location.href = "/login/";
+        return;
+      }
+
+      const data = {};
+      const enfermedadesInput = document.getElementById("enfermedadesCampo");
+      const sangreInput = document.getElementById("sangreCampo");
+
+      if (enfermedadesInput.value !== enfermedadesInput.dataset.valorCompleto && enfermedadesInput.value !== enfermedadesInput.dataset.valorOculto) {
+        data.enfermedades_sistemicas = enfermedadesInput.value;
+      }
+      if (sangreInput.value !== sangreInput.dataset.valorCompleto && sangreInput.value !== sangreInput.dataset.valorOculto) {
+        data.tipo_de_sangre = sangreInput.value;
+      }
+
+      if (Object.keys(data).length === 0) {
+        showToast("No hay cambios para guardar.");
+        return;
+      }
+
+      try {
+        const response = await axios.put(`http://127.0.0.1:8000/api/usuarios/perfil/editar/${usuario_id}/`, data, {
+          headers: {
+            "Authorization": `Token ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+        if (response.status === 200) {
+          showToast("✅ Perfil actualizado correctamente.");
+          cargarPerfil();
+        } else {
+          throw new Error("La actualización no fue exitosa.");
+        }
+      } catch (error) {
+        console.error("Error al guardar el perfil:", error);
+        showToast("❌ Ocurrió un error al guardar los cambios.");
+      }
+    }
+
+    window.onload = cargarPerfil;
+  </script>
+</body>
+</html>

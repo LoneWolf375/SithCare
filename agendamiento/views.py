@@ -5,6 +5,8 @@ from .serializers import CitaSerializer
 from .models import Cita
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime, time, timedelta
+from django.utils import timezone  # ⬅️ NUEVO
+from django.db import IntegrityError  # ⬅️ NUEVO
 
 @csrf_exempt
 @api_view(['POST'])
@@ -14,7 +16,10 @@ def create_appointment_view(request):
     """
     serializer = CitaSerializer(data=request.data)
     if serializer.is_valid():
-        cita_nueva = serializer.save()
+        try:  # ⬅️ NUEVO: capturar colisión por restricción única
+            cita_nueva = serializer.save()
+        except IntegrityError:
+            return Response({"error": "Ese horario ya está tomado."}, status=status.HTTP_400_BAD_REQUEST)
         serializer_respuesta = CitaSerializer(cita_nueva)
         return Response({
             "mensaje": "Cita creada con éxito",
@@ -133,11 +138,21 @@ def reprogramar_cita(request, cita_id):
     except ValueError:
         return Response({'error': 'Formato de fecha_hora inválido. Usa formato ISO8601.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    if nueva_fecha <= datetime.now(nueva_fecha.tzinfo):
+    # ⛔ BLOQUEO DE PASADO (con timezone)
+    if timezone.is_naive(nueva_fecha):
+        nueva_fecha = timezone.make_aware(nueva_fecha, timezone.get_current_timezone())
+    if nueva_fecha <= timezone.now():
         return Response({'error': 'La nueva fecha y hora debe ser en el futuro.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    cita.fecha_hora = nueva_fecha
-    cita.save()
+    # ⛔ NUEVO: Evitar mover a un horario ya tomado
+    if Cita.objects.filter(fecha_hora=nueva_fecha).exclude(id=cita.id).exists():
+        return Response({'error': 'Ese horario ya está tomado.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:  # ⬅️ NUEVO: capturar colisión en DB por seguridad
+        cita.fecha_hora = nueva_fecha
+        cita.save()
+    except IntegrityError:
+        return Response({'error': 'Ese horario ya está tomado.'}, status=status.HTTP_400_BAD_REQUEST)
 
     return Response({
         'mensaje': 'Cita reprogramada correctamente',
@@ -204,6 +219,13 @@ def verificar_disponibilidad(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
+    # ⛔ BLOQUEO: no permitir consulta de fechas pasadas
+    if fecha_obj < timezone.localdate():
+        return Response(
+            {"error": "No es posible consultar disponibilidad de fechas pasadas."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
     hora_inicio = time(9, 0)
     hora_fin = time(18, 0)
     intervalo = timedelta(minutes=30)
@@ -232,3 +254,122 @@ def verificar_disponibilidad(request):
         "fecha": fecha_str,
         "horas_disponibles": horas_disponibles
     }, status=status.HTTP_200_OK)
+
+
+# ⚠️ Nueva vista para agendar una cita rápidamente desde el frontend
+@csrf_exempt
+@api_view(['POST'])
+def agendar_cita_rapida_view(request):
+    """
+    Crea una nueva cita a partir de fecha y hora, y devuelve la información de la cita creada.
+    """
+    usuario_id = request.data.get('usuario_id')
+    fecha_str = request.data.get('fecha')
+    hora_str = request.data.get('hora')
+
+    if not all([usuario_id, fecha_str, hora_str]):
+        return Response(
+            {"error": "Los campos 'usuario_id', 'fecha' y 'hora' son obligatorios."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        # Combinar fecha y hora para crear un objeto datetime
+        fecha_hora_dt = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
+    except ValueError:
+        return Response(
+            {"error": "Formato de fecha o hora inválido. Usa YYYY-MM-DD y HH:MM."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # ⛔ BLOQUEO DE PASADO (con timezone)
+    if timezone.is_naive(fecha_hora_dt):
+        fecha_hora_dt = timezone.make_aware(fecha_hora_dt, timezone.get_current_timezone())
+    if fecha_hora_dt <= timezone.now():
+        return Response({"error": "No se puede agendar en una fecha/hora pasada."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # ⛔ NUEVO: prechequeo de doble reserva (global)
+    if Cita.objects.filter(fecha_hora=fecha_hora_dt).exists():
+        return Response({"error": "Ese horario ya está tomado."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # ✅ NUEVO: tomar motivo desde el body (con valor por defecto)
+    motivo_req = request.data.get('motivo', 'Consulta médica agendada por chatbot')
+
+    # Preparar los datos para el serializador de la Cita
+    datos_cita = {
+        'usuario': usuario_id,
+        'fecha_hora': fecha_hora_dt.isoformat(),
+        'estado': 'Pendiente',
+        'motivo': motivo_req
+    }
+
+    serializer = CitaSerializer(data=datos_cita)
+    if serializer.is_valid():
+        try:  # ⬅️ NUEVO: capturar colisión si ocurre entre prechequeo y save
+            cita_nueva = serializer.save()
+        except IntegrityError:
+            return Response({"error": "Ese horario ya está tomado."}, status=status.HTTP_400_BAD_REQUEST)
+        serializer_respuesta = CitaSerializer(cita_nueva)
+        return Response({
+            "mensaje": "Cita creada con éxito",
+            "cita": serializer_respuesta.data
+        }, status=status.HTTP_201_CREATED)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ⬇️⬇️⬇️ NUEVO: sugerir la primera fecha/hora disponible
+@api_view(['GET'])
+def sugerir_proximo_horario(request):
+    """
+    Devuelve la primera fecha/hora disponible a partir de 'ahora' (horario 09:00–18:00, saltos de 30 min).
+    Puedes pasar ?limite_dias=14 (por defecto 30).
+    """
+    limite_dias = int(request.GET.get('limite_dias', 30))
+    ahora = timezone.localtime()
+
+    hora_inicio = time(9, 0)
+    hora_fin = time(18, 0)
+    intervalo = timedelta(minutes=30)
+
+    def siguiente_slot(t: time) -> time:
+        """Redondea hacia arriba al próximo múltiplo de 30 minutos."""
+        mins = t.hour * 60 + t.minute
+        next_mins = ((mins + 29) // 30) * 30
+        h, m = divmod(next_mins, 60)
+        return time(h % 24, m)  # no debería pasar de 24 en este flujo
+
+    for offset in range(0, limite_dias + 1):
+        fecha_busqueda = (ahora.date() + timedelta(days=offset))
+
+        # Punto de inicio del día:
+        if fecha_busqueda == ahora.date():
+            start_time = max(hora_inicio, siguiente_slot(ahora.time().replace(second=0, microsecond=0)))
+            if start_time >= hora_fin:
+                continue  # Hoy ya no quedan slots, pasar al día siguiente
+        else:
+            start_time = hora_inicio
+
+        # Generar slots del día
+        actual_dt = datetime.combine(fecha_busqueda, start_time)
+        fin_dt = datetime.combine(fecha_busqueda, hora_fin)
+
+        slots = []
+        while actual_dt < fin_dt:
+            slots.append(actual_dt.time())
+            actual_dt += intervalo
+
+        # Remover ocupados
+        citas_ocupadas = Cita.objects.filter(fecha_hora__date=fecha_busqueda).values_list('fecha_hora', flat=True)
+        horas_ocupadas = {dt.time().replace(second=0, microsecond=0) for dt in citas_ocupadas}
+
+        for s in slots:
+            if s not in horas_ocupadas:
+                # Encontrado el primer slot libre
+                return Response({
+                    "fecha": fecha_busqueda.strftime("%Y-%m-%d"),
+                    "hora": s.strftime("%H:%M")
+                }, status=status.HTTP_200_OK)
+
+    # Sin resultados dentro del límite
+    return Response({"fecha": None, "hora": None}, status=status.HTTP_200_OK)

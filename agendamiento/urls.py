@@ -7,7 +7,9 @@ from agendamiento.views import (
     actualizar_estado_cita,
     reprogramar_cita,
     listar_todas_citas,
-    verificar_disponibilidad
+    verificar_disponibilidad,
+    agendar_cita_rapida_view,
+    sugerir_proximo_horario,
 )
 
 urlpatterns = [
@@ -20,4 +22,6 @@ urlpatterns = [
     path('citas/<int:cita_id>/estado/', actualizar_estado_cita, name='actualizar_estado_cita'),
     path('citas/<int:cita_id>/reprogramar/', reprogramar_cita, name='reprogramar_cita'),
     path('citas/disponibilidad/', verificar_disponibilidad, name='verificar_disponibilidad'),
+    path('citas/agendar/', agendar_cita_rapida_view, name='agendar_cita_rapida'),
+    path('citas/sugerir/', sugerir_proximo_horario, name='sugerir_proximo_horario')
 ]

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Profesional Enviado - SithCare</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg-1:#0b1020; --bg-2:#111832; --card:rgba(12,16,34,.65);
+      --text:#eef2ff; --muted:#9aa3c7; --info:#22c1ee; --info-2:#3b82f6;
+      --border:rgba(226,232,240,.14); --ring:rgba(59,130,246,.35);
+      --shadow:0 12px 36px rgba(0,0,0,.5);
+    }
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg-1:#eef3ff; --bg-2:#f7f9ff; --card:rgba(255,255,255,.92);
+        --text:#0f172a; --muted:#475569; --info:#3b82f6; --info-2:#60a5fa;
+        --border:rgba(30,41,59,.12); --ring:rgba(59,130,246,.28);
+        --shadow:0 12px 36px rgba(31,38,135,.18);
+      }
+    }
+
+    html,body{height:100%}
+    body{
+      margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--text);
+      display:grid; place-items:center; padding:24px;
+      background:
+        radial-gradient(1000px 700px at 12% 8%, var(--bg-2) 0%, transparent 60%),
+        radial-gradient(1000px 700px at 88% 92%, var(--bg-2) 0%, transparent 60%),
+        linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 100%);
+    }
+
+    .wrap{
+      width:min(96vw, 720px);
+      background:var(--card); backdrop-filter: blur(10px);
+      border:1px solid var(--border); border-radius:24px;
+      box-shadow:var(--shadow); padding:28px 24px; text-align:center;
+    }
+
+    .hero-icon{
+      width:88px; height:88px; border-radius:999px; display:grid; place-items:center;
+      background:linear-gradient(180deg,var(--info),var(--info-2));
+      color:#fff; margin:2px auto 14px;
+      box-shadow:0 12px 28px rgba(59,130,246,.25);
+    }
+    .hero-icon svg{ width:44px; height:44px; }
+
+    h2{ font-weight:800; margin:0 0 6px; }
+    .subtle{ color:var(--muted); font-size:1rem; }
+
+    /* Estado */
+    .status{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:.35rem .65rem; border-radius:999px;
+      border:1px solid var(--border); background:rgba(255,255,255,.06);
+      margin-top:8px; font-weight:700;
+    }
+
+    /* Contenido */
+    .card-lite{
+      border:1px solid var(--border); border-radius:16px; background:rgba(255,255,255,.04);
+      padding:16px; margin-top:14px; text-align:left;
+    }
+    .card-lite p{ margin:0 0 .4rem; }
+    .card-lite ul{ margin:0; padding-left:1.1rem; }
+    .card-lite li{ margin:.25rem 0; }
+
+    /* Botones */
+    .btn-row{
+      display:flex; flex-wrap:wrap; gap:10px; margin-top:18px;
+      justify-content:center;
+    }
+    .btn-strong{
+      padding:.9rem 1rem; font-weight:800; border-radius:14px;
+      transition: transform .05s ease, box-shadow .2s ease; border:none;
+      flex:1 1 220px; min-width:200px;
+    }
+    .btn-strong:focus-visible{ box-shadow:0 0 0 .35rem var(--ring); outline:none; }
+    .btn-strong:hover{ transform: translateY(-1px); }
+
+    .btn-primaryx{
+      background:linear-gradient(180deg,var(--info),var(--info-2)); color:#fff;
+      box-shadow:0 12px 28px rgba(59,130,246,.25);
+    }
+    .btn-ghost{
+      background:transparent; color:var(--text); border:1px solid var(--border);
+    }
+    .btn-ghost:hover{ box-shadow:0 0 0 .25rem rgba(255,255,255,.15); }
+    .hint{ color:var(--muted); font-size:.95rem; margin-top:10px; }
+  </style>
+</head>
+<body>
+
+  <main class="wrap" role="main" aria-labelledby="tituloProfesional">
+    <div class="hero-icon" aria-hidden="true">
+      <!-- Ambulancia SVG -->
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M3 13V7a2 2 0 0 1 2-2h7v8H3Z" stroke="white" stroke-width="1.6"/>
+        <path d="M12 9h5l3 3v3h-8V9Z" stroke="white" stroke-width="1.6"/>
+        <circle cx="7.5" cy="17.5" r="2" stroke="white" stroke-width="1.6"/>
+        <circle cx="18.5" cy="17.5" r="2" stroke="white" stroke-width="1.6"/>
+        <path d="M6.2 9.2h2.6M7.5 7.9v2.6" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <h2 id="tituloProfesional">Un profesional de la salud será enviado a tu ubicación</h2>
+    <p class="subtle">Mantén el teléfono con volumen y batería. Podrían llamarte en cualquier momento.</p>
+
+    <div class="status">
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      En coordinación…
+    </div>
+
+    <div class="card-lite mt-3">
+      <p><strong>Mientras llega la ayuda:</strong></p>
+      <ul>
+        <li>Mantente en un lugar seguro y de fácil acceso.</li>
+        <li>Ten a mano tu identificación y, si puedes, una lista de medicamentos.</li>
+        <li>Si tu condición empeora, llama a emergencias.</li>
+      </ul>
+    </div>
+
+    <div class="btn-row">
+      <a class="btn btn-strong btn-primaryx" href="#" id="shareLocBtn" role="button" aria-label="Compartir mi ubicación">Compartir mi ubicación</a>
+      <a class="btn btn-strong btn-ghost" href="tel:131" role="button" aria-label="Llamar al 131">Llamar al 131</a>
+      <a class="btn btn-strong btn-ghost" href="/" role="button" aria-label="Volver al inicio">Volver al inicio</a>
+    </div>
+
+    <div class="hint">Al tocar “Compartir mi ubicación”, abriremos Google Maps con tu posición para que puedas enviarla por tu app de mensajería.</div>
+  </main>
+
+  <script>
+    // Intenta abrir Google Maps con coordenadas actuales
+    document.getElementById('shareLocBtn').addEventListener('click', function (e) {
+      e.preventDefault();
+      if (!navigator.geolocation) {
+        window.open('https://www.google.com/maps', '_blank');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          const url = `https://www.google.com/maps?q=${latitude},${longitude}`;
+          window.open(url, '_blank');
+        },
+        () => {
+          // Si no se pudo obtener la ubicación, abrimos Maps de todas formas
+          window.open('https://www.google.com/maps', '_blank');
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+      );
+    });
+  </script>
+</body>
+</html>

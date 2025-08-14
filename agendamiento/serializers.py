@@ -1,20 +1,38 @@
 from rest_framework import serializers
-from .models import Cita # Importar modelo Cita
-from usuarios.models import Usuario # Importar modelo Usuario
+from .models import Cita
+from django.utils import timezone
 
 class CitaSerializer(serializers.ModelSerializer):
-    # Por defecto, el campo ForeignKey ('usuario') se representará con el ID del usuario.
-    # Si quisieras representar el usuario con más detalles (ej. username, nombre),
-    # podrías usar UsuarioSerializer aquí, pero para la creación/actualización de citas, el ID suele ser suficiente.
-    # usuario = serializers.PrimaryKeyRelatedField(queryset=Usuario.objects.all())
-    # O si quieres mostrar solo el nombre del usuario en la representación de la cita:
-    # usuario_nombre = serializers.CharField(source='usuario.nombre', read_only=True)
-
-
     class Meta:
         model = Cita
-        # Incluye todos los campos del modelo Cita que quieres exponer en la API
-        # El campo 'usuario' se manejará automáticamente como un campo de relación (su ID)
-        fields = '__all__'
-        # O especifica los campos explícitamente:
-        # fields = ['id', 'usuario', 'fecha_hora', 'motivo', 'estado']
+        fields = ['id', 'usuario', 'fecha_hora', 'motivo', 'estado']
+
+    # --- BLOQUEO DE FECHA/HORA PASADA ---
+    def validate_fecha_hora(self, value):
+        # Normaliza a aware si viene naive
+        if timezone.is_naive(value):
+            value = timezone.make_aware(value, timezone.get_current_timezone())
+        if value <= timezone.now():
+            raise serializers.ValidationError("La fecha/hora debe ser futura.")
+        return value
+
+    # Normaliza antes de crear/actualizar
+    def create(self, validated_data):
+        fh = validated_data['fecha_hora']
+        if timezone.is_naive(fh):
+            validated_data['fecha_hora'] = timezone.make_aware(fh, timezone.get_current_timezone())
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        fh = validated_data.get('fecha_hora')
+        if fh and timezone.is_naive(fh):
+            validated_data['fecha_hora'] = timezone.make_aware(fh, timezone.get_current_timezone())
+        return super().update(instance, validated_data)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['usuario'] = {
+            "id": instance.usuario.id,
+            "nombre": f"{instance.usuario.nombre[0]}***" if instance.usuario.nombre else None
+        }
+        return data

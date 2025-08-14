@@ -1,0 +1,235 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>SithCare – Crear Cuenta</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg-1:#eef3ff; --bg-2:#f7f9ff; --card:rgba(255,255,255,.78);
+      --text:#1c1f27; --muted:#5a6275; --brand:#2e5bff; --brand-2:#6b7bff;
+      --border:rgba(30,41,59,.12); --ring:rgba(46,91,255,.35);
+      --shadow:0 12px 36px rgba(31,38,135,.18);
+      --eye-color:#5a6275;         /* Color base modo claro */
+      --eye-hover-color:#2e5bff;   /* Color hover modo claro */
+    }
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg-1:#0b1020; --bg-2:#111832; --card:rgba(12,16,34,.65);
+        --text:#eef2ff; --muted:#9aa3c7; --brand:#6b8bff; --brand-2:#8aa0ff;
+        --border:rgba(226,232,240,.14); --ring:rgba(107,139,255,.45);
+        --shadow:0 12px 36px rgba(0,0,0,.5);
+        --eye-color:#9aa3c7;        /* Color base modo oscuro */
+        --eye-hover-color:#6b8bff;  /* Color hover modo oscuro */
+      }
+    }
+
+    html,body{height:100%}
+    body{
+      margin:0; font-family:'Inter',system-ui,Segoe UI,Roboto,Arial,sans-serif; color:var(--text);
+      display:grid; place-items:center; padding:24px;
+      background:
+        radial-gradient(1000px 700px at 12% 8%, var(--bg-2) 0%, transparent 60%),
+        radial-gradient(1000px 700px at 88% 92%, var(--bg-2) 0%, transparent 60%),
+        linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 100%);
+    }
+    .card-glass{
+      width:min(96vw, 480px);
+      background:var(--card); backdrop-filter: blur(10px);
+      border:1px solid var(--border); border-radius:24px;
+      box-shadow:var(--shadow); padding:28px 24px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px; margin-bottom:10px;
+      justify-content:center;
+    }
+    .brand img{ width:44px; height:44px; border-radius:10px; }
+    .brand h1{ font-size:22px; font-weight:800; margin:0; letter-spacing:.2px; }
+    .subtitle{ color:var(--muted); margin:0 0 18px; font-size:14px; text-align:center;}
+
+    .form-floating>.form-control, .form-floating>.form-control:focus{
+      background:rgba(255,255,255,.55);
+    }
+    @media (prefers-color-scheme: dark){
+      .form-floating>.form-control, .form-floating>.form-control:focus{
+        background:rgba(15,20,42,.55); color:var(--text);
+      }
+      .form-control::placeholder{ color:#8ea0c7; }
+    }
+
+    .btn-brand{
+      background:linear-gradient(180deg,var(--brand),var(--brand-2)); border:none;
+      font-weight:700; padding:.9rem 1rem; border-radius:14px;
+      box-shadow:0 12px 28px rgba(46,91,255,.25);
+    }
+    .btn-brand:focus{ box-shadow:0 0 0 .35rem var(--ring); }
+    .btn-ghost{
+      background:transparent; color:var(--brand); border:1px solid var(--brand);
+      border-radius:12px; font-weight:600;
+    }
+
+    .help{ font-size:.85rem; color:var(--muted); }
+    .toggle-pass{
+      position:absolute; right:12px; top:50%; transform:translateY(-50%);
+      border:none; background:transparent; padding:6px; line-height:0; cursor:pointer;
+    }
+    .toggle-pass svg path,
+    .toggle-pass svg circle {
+      stroke: var(--eye-color);
+      transition: stroke 0.2s ease;
+    }
+    .toggle-pass:hover svg path,
+    .toggle-pass:hover svg circle {
+      stroke: var(--eye-hover-color);
+    }
+    .is-invalid + .invalid-feedback{ display:block; }
+  </style>
+</head>
+<body>
+
+  <main class="card-glass">
+    <div class="brand">
+      <img src="{% static 'assets/img/sithcare_logo.PNG' %}" alt="SithCare">
+      <h1>Crear cuenta</h1>
+    </div>
+    <p class="subtitle">Completa tus datos para registrarte en SithCare</p>
+
+    <div class="vstack gap-3">
+
+      <div class="form-floating">
+        <input id="nombre" type="text" class="form-control" placeholder="Nombre completo" autocomplete="name">
+        <label for="nombre">Nombre completo</label>
+        <div class="invalid-feedback">Ingresa tu nombre.</div>
+      </div>
+
+      <div class="form-floating">
+        <input id="rut" type="text" class="form-control" placeholder="12345678-9" inputmode="latin-prose" autocomplete="off">
+        <label for="rut">RUT (12345678-9)</label>
+        <div class="invalid-feedback">RUT inválido.</div>
+      </div>
+
+      <div class="form-floating">
+        <input id="telefono" type="tel" class="form-control" placeholder="+56 9 1234 5678" autocomplete="tel">
+        <label for="telefono">Teléfono</label>
+        <div class="invalid-feedback">Ingresa un teléfono válido.</div>
+      </div>
+
+      <div class="position-relative form-floating">
+        <input id="password" type="password" class="form-control" placeholder="Contraseña" autocomplete="new-password">
+        <label for="password">Contraseña</label>
+        <button class="toggle-pass" type="button" aria-label="Mostrar u ocultar contraseña" data-target="password">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="1.5"/></svg>
+        </button>
+        <div class="invalid-feedback">La contraseña debe tener al menos 6 caracteres.</div>
+      </div>
+
+      <div class="position-relative form-floating">
+        <input id="confirm_password" type="password" class="form-control" placeholder="Confirmar contraseña" autocomplete="new-password">
+        <label for="confirm_password">Confirmar contraseña</label>
+        <button class="toggle-pass" type="button" aria-label="Mostrar u ocultar contraseña" data-target="confirm_password">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="1.5"/></svg>
+        </button>
+        <div class="invalid-feedback">Las contraseñas no coinciden.</div>
+      </div>
+
+      <button id="btnSubmit" class="btn btn-brand w-100">
+        <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+        Crear cuenta
+      </button>
+
+      <div id="respuesta" class="mt-2"></div>
+
+      <div class="text-center">
+        <a class="btn btn-ghost w-100" href="/login/">¿Ya tienes cuenta? Inicia sesión</a>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    document.querySelectorAll('.toggle-pass').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const input = document.getElementById(btn.dataset.target);
+        input.type = input.type === 'password' ? 'text' : 'password';
+      });
+    });
+
+    function normalizarRUT(v){
+      v = (v || '').toUpperCase().replace(/[^0-9K]/g,'');
+      if(!v) return '';
+      const cuerpo = v.slice(0, -1);
+      const dv = v.slice(-1);
+      return cuerpo + (dv ? '-' + dv : '');
+    }
+
+    function validarCampos({nombre, rut, telefono, password, confirmPassword}){
+      let ok = true;
+      const setInvalid = (id, cond) => {
+        const el = document.getElementById(id);
+        if(cond){ el.classList.add('is-invalid'); ok = false; } else { el.classList.remove('is-invalid'); }
+      };
+      setInvalid('nombre', !nombre);
+      setInvalid('rut', !/^\d{7,8}-[\dK]$/.test(rut));
+      setInvalid('telefono', telefono.length < 8);
+      setInvalid('password', password.length < 6);
+      setInvalid('confirm_password', confirmPassword !== password || !confirmPassword);
+      return ok;
+    }
+
+    const btn = document.getElementById('btnSubmit');
+    btn.addEventListener('click', registrarUsuario);
+
+    function setLoading(state){
+      const sp = btn.querySelector('.spinner-border');
+      if(state){
+        sp.classList.remove('d-none');
+        btn.setAttribute('disabled', 'true');
+      }else{
+        sp.classList.add('d-none');
+        btn.removeAttribute('disabled');
+      }
+    }
+
+    function registrarUsuario() {
+      const nombre = document.getElementById("nombre").value.trim();
+      const rut = normalizarRUT(document.getElementById("rut").value.trim());
+      const telefono = document.getElementById("telefono").value.trim();
+      const password = document.getElementById("password").value;
+      const confirmPassword = document.getElementById("confirm_password").value;
+
+      document.getElementById("rut").value = rut;
+
+      if (!validarCampos({nombre, rut, telefono, password, confirmPassword})) {
+        document.getElementById("respuesta").innerHTML =
+          `<div class="alert alert-danger mt-1">Revisa los campos marcados.</div>`;
+        return;
+      }
+
+      const data = { nombre, rut, telefono, password };
+      setLoading(true);
+      axios.post('http://127.0.0.1:8000/api/usuarios/registrar/', data)
+        .then(response => {
+          const usuario = response.data;
+          localStorage.setItem("usuario_id", usuario.id);
+          localStorage.setItem("token", usuario.token);
+          localStorage.setItem("username", usuario.username);
+
+          document.getElementById("respuesta").innerHTML =
+            `<div class="alert alert-success mt-2">✅ Usuario registrado correctamente.</div>`;
+
+          setTimeout(() => window.location.href = "/perfil_usuario/", 900);
+        })
+        .catch(error => {
+          const msg = error.response?.data?.error || 'Error desconocido';
+          document.getElementById("respuesta").innerHTML =
+            `<div class="alert alert-danger mt-2">❌ ${msg}</div>`;
+        })
+        .finally(()=> setLoading(false));
+    }
+  </script>
+</body>
+</html>
