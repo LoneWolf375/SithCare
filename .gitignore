@@ -1,0 +1,31 @@
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.egg
+*.log
+
+# Entornos virtuales
+venv/
+.env/
+.env*/
+
+# Archivos de Django
+db.sqlite3
+media/
+staticfiles/
+
+# Archivos temporales
+*.tmp
+*.swp
+*.swo
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de VS Code
+.vscode/
