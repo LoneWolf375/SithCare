@@ -5,8 +5,9 @@ from .serializers import CitaSerializer
 from .models import Cita
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime, time, timedelta
-from django.utils import timezone  # ⬅️ NUEVO
-from django.db import IntegrityError  # ⬅️ NUEVO
+from django.utils import timezone  # ⬅️ TZ utilities
+from django.db import IntegrityError  # ⬅️ Para colisiones únicas
+
 
 @csrf_exempt
 @api_view(['POST'])
@@ -16,7 +17,7 @@ def create_appointment_view(request):
     """
     serializer = CitaSerializer(data=request.data)
     if serializer.is_valid():
-        try:  # ⬅️ NUEVO: capturar colisión por restricción única
+        try:
             cita_nueva = serializer.save()
         except IntegrityError:
             return Response({"error": "Ese horario ya está tomado."}, status=status.HTTP_400_BAD_REQUEST)
@@ -144,11 +145,11 @@ def reprogramar_cita(request, cita_id):
     if nueva_fecha <= timezone.now():
         return Response({'error': 'La nueva fecha y hora debe ser en el futuro.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # ⛔ NUEVO: Evitar mover a un horario ya tomado
+    # ⛔ Evitar mover a un horario ya tomado
     if Cita.objects.filter(fecha_hora=nueva_fecha).exclude(id=cita.id).exists():
         return Response({'error': 'Ese horario ya está tomado.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    try:  # ⬅️ NUEVO: capturar colisión en DB por seguridad
+    try:
         cita.fecha_hora = nueva_fecha
         cita.save()
     except IntegrityError:
@@ -200,9 +201,8 @@ def listar_todas_citas(request):
 @api_view(['POST'])
 def verificar_disponibilidad(request):
     """
-    Endpoint para consultar horas disponibles en un día específico.
-    Horario fijo 09:00 - 17:30, intervalos de 30 min.
-    Filtra horas ya agendadas.
+    Consulta horas disponibles en un día específico (09:00–18:00, cada 30').
+    Calcula y compara en **zona horaria local** para evitar desfases.
     """
     fecha_str = request.data.get('fecha')
     if not fecha_str:
@@ -210,7 +210,7 @@ def verificar_disponibilidad(request):
             {"error": "El campo 'fecha' es obligatorio. Usa formato YYYY-MM-DD."},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
+
     try:
         fecha_obj = datetime.strptime(fecha_str, "%Y-%m-%d").date()
     except ValueError:
@@ -219,7 +219,7 @@ def verificar_disponibilidad(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # ⛔ BLOQUEO: no permitir consulta de fechas pasadas
+    # ⛔ No permitir consulta de fechas pasadas
     if fecha_obj < timezone.localdate():
         return Response(
             {"error": "No es posible consultar disponibilidad de fechas pasadas."},
@@ -230,19 +230,30 @@ def verificar_disponibilidad(request):
     hora_fin = time(18, 0)
     intervalo = timedelta(minutes=30)
 
-    slots = []
-    actual_dt = datetime.combine(fecha_obj, hora_inicio)
-    fin_dt = datetime.combine(fecha_obj, hora_fin)
+    tz = timezone.get_current_timezone()
 
-    while actual_dt < fin_dt:
-        slots.append(actual_dt.time())
-        actual_dt += intervalo
+    # Límites del día en TZ local (aware)
+    inicio_local = timezone.make_aware(datetime.combine(fecha_obj, hora_inicio), tz)
+    fin_local = timezone.make_aware(datetime.combine(fecha_obj, hora_fin), tz)
 
-    citas_ocupadas = Cita.objects.filter(
-        fecha_hora__date=fecha_obj
+    # Traer SOLO citas dentro del rango local del día
+    citas_qs = Cita.objects.filter(
+        fecha_hora__gte=inicio_local,
+        fecha_hora__lt=fin_local
     ).values_list('fecha_hora', flat=True)
 
-    horas_ocupadas = [cita_dt.time().replace(second=0, microsecond=0) for cita_dt in citas_ocupadas]
+    # Normalizar cada cita a hora LOCAL HH:MM (sin segundos) para comparar
+    horas_ocupadas = {
+        timezone.localtime(dt, tz).time().replace(second=0, microsecond=0)
+        for dt in citas_qs
+    }
+
+    # Construir la grilla local
+    slots = []
+    actual_dt = inicio_local
+    while actual_dt < fin_local:
+        slots.append(actual_dt.time())
+        actual_dt += intervalo
 
     horas_disponibles = [
         slot.strftime("%H:%M")
@@ -274,7 +285,7 @@ def agendar_cita_rapida_view(request):
         )
 
     try:
-        # Combinar fecha y hora para crear un objeto datetime
+        # Combinar fecha y hora (naive)
         fecha_hora_dt = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
     except ValueError:
         return Response(
@@ -282,20 +293,18 @@ def agendar_cita_rapida_view(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # ⛔ BLOQUEO DE PASADO (con timezone)
+    # ⛔ Hacer aware en TZ local y bloquear pasado
     if timezone.is_naive(fecha_hora_dt):
         fecha_hora_dt = timezone.make_aware(fecha_hora_dt, timezone.get_current_timezone())
     if fecha_hora_dt <= timezone.now():
         return Response({"error": "No se puede agendar en una fecha/hora pasada."}, status=status.HTTP_400_BAD_REQUEST)
 
-    # ⛔ NUEVO: prechequeo de doble reserva (global)
+    # ⛔ Prechequeo de doble reserva
     if Cita.objects.filter(fecha_hora=fecha_hora_dt).exists():
         return Response({"error": "Ese horario ya está tomado."}, status=status.HTTP_400_BAD_REQUEST)
 
-    # ✅ NUEVO: tomar motivo desde el body (con valor por defecto)
     motivo_req = request.data.get('motivo', 'Consulta médica agendada por chatbot')
 
-    # Preparar los datos para el serializador de la Cita
     datos_cita = {
         'usuario': usuario_id,
         'fecha_hora': fecha_hora_dt.isoformat(),
@@ -305,7 +314,7 @@ def agendar_cita_rapida_view(request):
 
     serializer = CitaSerializer(data=datos_cita)
     if serializer.is_valid():
-        try:  # ⬅️ NUEVO: capturar colisión si ocurre entre prechequeo y save
+        try:
             cita_nueva = serializer.save()
         except IntegrityError:
             return Response({"error": "Ese horario ya está tomado."}, status=status.HTTP_400_BAD_REQUEST)
@@ -314,18 +323,18 @@ def agendar_cita_rapida_view(request):
             "mensaje": "Cita creada con éxito",
             "cita": serializer_respuesta.data
         }, status=status.HTTP_201_CREATED)
-    
+
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# ⬇️⬇️⬇️ NUEVO: sugerir la primera fecha/hora disponible
 @api_view(['GET'])
 def sugerir_proximo_horario(request):
     """
-    Devuelve la primera fecha/hora disponible a partir de 'ahora' (horario 09:00–18:00, saltos de 30 min).
-    Puedes pasar ?limite_dias=14 (por defecto 30).
+    Devuelve la primera fecha/hora disponible a partir de 'ahora' (09:00–18:00, 30').
+    Cálculo en **zona local** y filtrado por rango local del día.
     """
     limite_dias = int(request.GET.get('limite_dias', 30))
+    tz = timezone.get_current_timezone()
     ahora = timezone.localtime()
 
     hora_inicio = time(9, 0)
@@ -337,7 +346,7 @@ def sugerir_proximo_horario(request):
         mins = t.hour * 60 + t.minute
         next_mins = ((mins + 29) // 30) * 30
         h, m = divmod(next_mins, 60)
-        return time(h % 24, m)  # no debería pasar de 24 en este flujo
+        return time(h % 24, m)
 
     for offset in range(0, limite_dias + 1):
         fecha_busqueda = (ahora.date() + timedelta(days=offset))
@@ -346,30 +355,34 @@ def sugerir_proximo_horario(request):
         if fecha_busqueda == ahora.date():
             start_time = max(hora_inicio, siguiente_slot(ahora.time().replace(second=0, microsecond=0)))
             if start_time >= hora_fin:
-                continue  # Hoy ya no quedan slots, pasar al día siguiente
+                continue
         else:
             start_time = hora_inicio
 
-        # Generar slots del día
-        actual_dt = datetime.combine(fecha_busqueda, start_time)
-        fin_dt = datetime.combine(fecha_busqueda, hora_fin)
+        # Rango local del día
+        inicio_local = timezone.make_aware(datetime.combine(fecha_busqueda, start_time), tz)
+        fin_local = timezone.make_aware(datetime.combine(fecha_busqueda, hora_fin), tz)
 
-        slots = []
-        while actual_dt < fin_dt:
-            slots.append(actual_dt.time())
-            actual_dt += intervalo
+        # Citas en rango local
+        citas_qs = Cita.objects.filter(
+            fecha_hora__gte=inicio_local,
+            fecha_hora__lt=fin_local
+        ).values_list('fecha_hora', flat=True)
 
-        # Remover ocupados
-        citas_ocupadas = Cita.objects.filter(fecha_hora__date=fecha_busqueda).values_list('fecha_hora', flat=True)
-        horas_ocupadas = {dt.time().replace(second=0, microsecond=0) for dt in citas_ocupadas}
+        ocupadas = {
+            timezone.localtime(dt, tz).time().replace(second=0, microsecond=0)
+            for dt in citas_qs
+        }
 
-        for s in slots:
-            if s not in horas_ocupadas:
-                # Encontrado el primer slot libre
+        # Buscar el primer slot libre
+        cur = inicio_local
+        while cur < fin_local:
+            if cur.time() not in ocupadas:
                 return Response({
                     "fecha": fecha_busqueda.strftime("%Y-%m-%d"),
-                    "hora": s.strftime("%H:%M")
+                    "hora": cur.strftime("%H:%M")
                 }, status=status.HTTP_200_OK)
+            cur += intervalo
 
     # Sin resultados dentro del límite
     return Response({"fecha": None, "hora": None}, status=status.HTTP_200_OK)

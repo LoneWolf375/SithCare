@@ -1,0 +1,26 @@
+id,usuario_id,fecha_hora,estado,motivo
+22,10,2025-08-06 10:00:00-04:00,Pendiente,Consulta médica agendada por chatbot
+23,10,2025-08-13 10:00:00-04:00,Pendiente,Consulta médica agendada por chatbot
+24,10,2025-08-30 10:30:00-04:00,Pendiente,Consulta médica agendada por chatbot
+25,10,2025-08-13 14:30:00-04:00,Pendiente,Consulta médica agendada por chatbot
+26,11,2025-08-07 12:00:00-04:00,Pendiente,Consulta médica agendada por chatbot
+27,12,2025-08-12 11:30:00-04:00,Pendiente,Consulta médica agendada por chatbot
+28,13,2025-08-12 12:00:00-04:00,Pendiente,Consulta médica agendada por chatbot
+29,13,2025-08-04 11:00:00-04:00,Pendiente,Consulta médica agendada por chatbot
+30,13,2025-08-12 10:30:00-04:00,Pendiente,Consulta médica agendada por chatbot
+31,14,2025-08-20 09:00:00-04:00,Pendiente,Consulta médica agendada por chatbot
+32,15,2025-08-20 09:30:00-04:00,Pendiente,Consulta médica agendada por chatbot
+33,15,2025-08-20 10:30:00-04:00,Pendiente,Dolor de cabeza
+34,15,2025-08-20 12:00:00-04:00,Pendiente,Dolor de cabeza
+35,15,2025-08-14 11:30:00-04:00,Pendiente,Consulta médica agendada por chatbot
+36,15,2025-08-14 09:30:00-04:00,Pendiente,Consulta médica agendada por chatbot
+37,15,2025-08-14 17:30:00-04:00,Pendiente,Consulta médica agendada por chatbot
+38,15,2025-08-22 17:30:00-04:00,Pendiente,Consulta médica agendada por chatbot
+39,16,2025-08-20 10:00:00-04:00,Pendiente,Dolor de cuello intenso
+40,17,2025-08-20 11:00:00-04:00,Pendiente,Dolor de cuello intenso
+41,17,2025-08-22 09:00:00-04:00,Pendiente,Consulta médica agendada por chatbot
+42,17,2025-08-22 09:30:00-04:00,Pendiente,Consulta médica agendada por chatbot
+43,17,2025-08-22 14:00:00-04:00,Pendiente,Consulta médica agendada por chatbot
+44,17,2025-08-20 11:30:00-04:00,Pendiente,Dolor de brazo derecho
+45,18,2025-08-25 09:00:00-04:00,Pendiente,Dolor de garganta
+46,18,2025-08-26 09:00:00-04:00,Pendiente,Dolor de cadera

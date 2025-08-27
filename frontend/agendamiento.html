@@ -12,8 +12,12 @@
       --text:#eef2ff; --muted:#9aa3c7; --brand:#6b8bff; --brand-2:#8aa0ff;
       --border:rgba(226,232,240,.14); --ring:rgba(107,139,255,.45);
       --shadow:0 12px 36px rgba(0,0,0,.5);
-      --ok:#22c55e; --ok-2:#16a34a;
       --chip:#1f2a44; --chip-border:#334155; --chip-active:#2139ff1a;
+
+      /* Paleta estados (oscuro) */
+      --avail:#22c55e; --avail-2:#16a34a; --avail-bg:#0a2a18;
+      --occ-text:#94a3b8; --occ-bg:#0f172a; --occ-border:#334155;
+      --past-text:#64748b; --past-bg:#0b1220;
     }
     @media (prefers-color-scheme: light){
       :root{
@@ -22,6 +26,11 @@
         --border:rgba(30,41,59,.12); --ring:rgba(46,91,255,.35);
         --shadow:0 12px 36px rgba(31,38,135,.18);
         --chip:#f1f5f9; --chip-border:#cbd5e1; --chip-active:#2e5bff12;
+
+        /* Paleta estados (claro) */
+        --avail:#16a34a; --avail-2:#22c55e; --avail-bg:#e8f9ee;
+        --occ-text:#475569; --occ-bg:#f1f5f9; --occ-border:#cbd5e1;
+        --past-text:#64748b; --past-bg:#f8fafc;
       }
     }
 
@@ -62,19 +71,50 @@
     }
     #fecha.form-control:focus{ box-shadow:0 0 0 .35rem var(--ring); border-color:transparent; }
 
-    /* Lista de horas como “chips” */
+    /* Contenedor horas */
     #horas-container{ border:1px solid var(--border); border-radius:16px; padding:16px; background:rgba(255,255,255,.03); }
-    #horas-lista{ display:flex; flex-wrap:wrap; gap:10px; margin:0; padding:0; list-style:none; }
+    #horas-lista{ display:flex; flex-direction:column; gap:10px; margin:0; padding:0; list-style:none; }
+
+    /* Base de cada slot (evita usar estilos inline) */
+    .slot{
+      display:block;
+      margin:0;
+      padding:.55rem .9rem;
+      border-radius:999px;
+      line-height:1.2;
+    }
+
+    /* Disponible: verde */
     .hora-disponible{
       cursor:pointer; user-select:none;
-      padding:.55rem .9rem; border-radius:999px;
-      background:var(--chip); border:1px solid var(--chip-border);
+      background: var(--avail-bg);
+      border:1px solid rgba(34,197,94,.55);
       color:var(--text); transition: all .15s ease;
     }
     .hora-disponible:hover{ transform:translateY(-1px); box-shadow:0 8px 18px rgba(0,0,0,.15); }
     .hora-disponible.selected{
-      background: var(--chip-active);
-      border-color: var(--brand); box-shadow:0 0 0 .2rem var(--ring);
+      background: linear-gradient(180deg, rgba(34,197,94,.15), rgba(34,197,94,.08));
+      border-color: var(--avail);
+      box-shadow:0 0 0 .18rem rgba(34,197,94,.35);
+    }
+
+    /* Ocupado: gris */
+    .hora-ocupada{
+      pointer-events: none; cursor: not-allowed;
+      background: var(--occ-bg);
+      border:1px solid var(--occ-border);
+      color: var(--occ-text);
+      opacity:.9;
+    }
+
+    /* Pasado (hoy): gris oscuro dashed + tachado leve */
+    .hora-pasada{
+      pointer-events: none; cursor: not-allowed;
+      background: var(--past-bg);
+      border:1px dashed var(--occ-border);
+      color: var(--past-text);
+      text-decoration: line-through;
+      opacity:.85;
     }
 
     /* Botón primario */
@@ -85,10 +125,23 @@
     }
     .btn-primary:focus{ box-shadow:0 0 0 .35rem var(--ring); }
 
-    /* Modal (hereda Bootstrap, solo color) */
+    /* Modal */
     .modal-content{ background:var(--card); color:var(--text); border:1px solid var(--border); }
     .btn-secondary{ background:transparent; color:var(--muted); border:1px solid var(--border); }
     .btn-secondary:hover{ color:var(--text); }
+
+    /* Badges de la leyenda */
+    .badge-disponible{
+      background: linear-gradient(180deg, rgba(34,197,94,.95), rgba(22,163,74,.95));
+    }
+    .badge-ocupado{
+      background: var(--occ-border);
+    }
+    .badge-pasado{
+      background: var(--past-bg);
+      color:#e2e8f0;
+      border:1px dashed var(--occ-border);
+    }
   </style>
 </head>
 <body>
@@ -101,7 +154,14 @@
     </div>
 
     <label for="fecha" class="form-label">Selecciona una fecha</label>
-    <input type="date" id="fecha" class="form-control mb-3">
+    <input type="date" id="fecha" class="form-control mb-2">
+
+    <!-- Leyenda -->
+    <div class="mb-2">
+      <span class="badge badge-disponible">Disponible</span>
+      <span class="badge badge-ocupado">Ocupado</span>
+      <span class="badge badge-pasado">Pasado (hoy)</span>
+    </div>
 
     <div id="sugerencia" class="mb-3 hint border rounded-3 p-3" style="border-color:var(--border)!important; background:rgba(255,255,255,.03);">
       🕒 Buscando la primera hora disponible…
@@ -109,7 +169,7 @@
 
     <div id="horas-container" class="mt-2 d-none">
       <h5 class="mb-2">Opciones de agendamiento</h5>
-      <ul id="horas-lista" class="list-group"></ul>
+      <ul id="horas-lista"></ul>
     </div>
   </main>
 
@@ -142,9 +202,8 @@
     const sugerencia = document.getElementById("sugerencia");
     const confirmacionModal = new bootstrap.Modal(document.getElementById('confirmacion-modal'));
     const confirmarBtn = document.getElementById('confirmar-btn');
-    const chatbotBox = document.getElementById('chatbot');
+
     let citaSeleccionada = { fecha: '', hora: '' };
-    let sugerenciaGlobal = null;
 
     function formatearFechaLargo(fechaISO) {
       const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -153,7 +212,7 @@
     }
 
     function mostrarError(mensaje) {
-      horasLista.innerHTML = `<li class='list-group-item text-danger bg-transparent border-0 ps-0'>${mensaje}</li>`;
+      horasLista.innerHTML = `<li class="slot hora-ocupada">${mensaje}</li>`;
       horasContainer.classList.remove("d-none");
     }
 
@@ -181,12 +240,10 @@
       .then(res => {
         const { fecha, hora } = res.data || {};
         if (fecha && hora) {
-          sugerenciaGlobal = { fecha, hora };
           const fechaLarga = formatearFechaLargo(fecha);
           sugerencia.innerHTML =
             `🕒 <strong>Sugerencia:</strong> La próxima hora disponible es <strong>${hora}</strong> el <strong>${fechaLarga}</strong>. ` +
             `<button id="btn-usar-sugerencia" class="btn btn-sm btn-link p-0 ms-1">Usar esta sugerencia</button>`;
-
           document.getElementById('btn-usar-sugerencia').onclick = () => {
             fechaInput.value = fecha;
             fechaInput.dispatchEvent(new Event('change'));
@@ -208,53 +265,110 @@
       });
     }
 
+    // Helpers
+    function esHoy(fechaISO){
+      const d = new Date();
+      const [y, mo, da] = fechaISO.split('-').map(Number);
+      return d.getFullYear()===y && (d.getMonth()+1)===mo && d.getDate()===da;
+    }
+    function horaYaPasada(hhmm){
+      const [H,M] = hhmm.split(':').map(Number);
+      const ahora = new Date();
+      const comp = new Date();
+      comp.setHours(H, M, 0, 0);
+      return comp.getTime() <= ahora.getTime();
+    }
+    function generarGrillaDia() {
+      const res = [];
+      let h = 9, m = 0;
+      while (true) {
+        const hh = String(h).padStart(2, '0');
+        const mm = String(m).padStart(2, '0');
+        res.push(`${hh}:${mm}`);
+        m += 30;
+        if (m === 60) { m = 0; h += 1; }
+        if (h > 17 || (h === 17 && m === 30)) break; // hasta 17:30 inclusive
+      }
+      return res;
+    }
+    function padHora(hhmm) {
+      if (!hhmm) return hhmm;
+      const [h,m] = hhmm.split(':');
+      return `${String(parseInt(h,10)).padStart(2,'0')}:${String(parseInt(m,10)).padStart(2,'0')}`;
+    }
+
     fechaInput.addEventListener("change", () => {
       const fechaSeleccionada = fechaInput.value;
       const token = localStorage.getItem("authToken");
+      if (!fechaSeleccionada) return mostrarError("Por favor, selecciona una fecha válida.");
 
-      if (!fechaSeleccionada) {
-        mostrarError("Por favor, selecciona una fecha válida.");
-        return;
-      }
-
-      axios.post("http://127.0.0.1:8000/api/agendamiento/citas/disponibilidad/", {
-        fecha: fechaSeleccionada
-      }, {
+      axios.post("http://127.0.0.1:8000/api/agendamiento/citas/disponibilidad/", { fecha: fechaSeleccionada }, {
         headers: { 'Authorization': `Token ${token}` }
       })
       .then(response => {
-        const horas = response.data.horas_disponibles;
-        if (horas && horas.length > 0) {
-          horasLista.innerHTML = "";
-          horas.forEach(hora => {
-            const item = document.createElement("li");
-            item.className = "list-group-item hora-disponible";
-            item.innerText = hora;
-            item.style.background = "transparent";
-            item.style.border = "none";
+        const horasDisponibles = new Set((response.data.horas_disponibles || []).map(padHora));
+        const grilla = generarGrillaDia();
 
-            item.onclick = () => {
-              document.querySelectorAll('.hora-disponible').forEach(el => el.classList.remove('selected'));
-              item.classList.add('selected');
+        horasLista.innerHTML = "";
+        grilla.forEach(hora => {
+          const li = document.createElement("li");
+          li.textContent = hora;
+          li.className = "slot";
 
-              citaSeleccionada.fecha = fechaSeleccionada;
-              citaSeleccionada.hora = hora;
+          const disponible = horasDisponibles.has(padHora(hora));
+          const pasado = esHoy(fechaSeleccionada) && horaYaPasada(hora);
 
-              const fechaCompleta = formatearFechaLargo(fechaSeleccionada);
-              document.getElementById('confirmacion-texto').innerText =
-                `Cita agendada para ${citaSeleccionada.hora} el ${fechaCompleta}`;
-            
-              const motivoPrev = sessionStorage.getItem('motivoPaciente') || 'No especificado';
-              document.getElementById('confirmacion-motivo').textContent = motivoPrev;
+          if (!disponible || pasado) {
+            li.classList.add(pasado ? 'hora-pasada' : 'hora-ocupada');
+            li.setAttribute('aria-disabled','true');
+            li.tabIndex = -1;
+          } else {
+            li.classList.add('hora-disponible');
+            li.setAttribute('role','button');
+            li.tabIndex = 0;
 
-              confirmacionModal.show();
-            };
-            horasLista.appendChild(item);
-          });
-          horasContainer.classList.remove("d-none");
-        } else {
-          mostrarError("No hay cupos disponibles para esta fecha.");
-        }
+            // Revalidación antes del modal
+            li.addEventListener("click", async () => {
+              try {
+                const resp = await axios.post(
+                  "http://127.0.0.1:8000/api/agendamiento/citas/disponibilidad/",
+                  { fecha: fechaSeleccionada },
+                  { headers: { 'Authorization': `Token ${token}` } }
+                );
+                const disponiblesNow = new Set((resp.data.horas_disponibles || []).map(padHora));
+                if (!disponiblesNow.has(padHora(hora))) {
+                  li.classList.remove('hora-disponible','selected');
+                  li.classList.add('hora-ocupada');
+                  li.setAttribute('aria-disabled','true');
+                  li.tabIndex = -1;
+                  fechaInput.dispatchEvent(new Event('change'));
+                  return;
+                }
+
+                document.querySelectorAll('.hora-disponible.selected').forEach(el => el.classList.remove('selected'));
+                li.classList.add('selected');
+
+                citaSeleccionada.fecha = fechaSeleccionada;
+                citaSeleccionada.hora = hora;
+
+                const fechaCompleta = formatearFechaLargo(fechaSeleccionada);
+                document.getElementById('confirmacion-texto').innerText =
+                  `Cita agendada para ${citaSeleccionada.hora} el ${fechaCompleta}`;
+
+                const motivoPrev = sessionStorage.getItem('motivoPaciente') || 'No especificado';
+                document.getElementById('confirmacion-motivo').textContent = motivoPrev;
+
+                confirmacionModal.show();
+              } catch (e) {
+                sugerencia.textContent = "No se pudo revalidar la disponibilidad. Intenta de nuevo.";
+              }
+            });
+          }
+
+          horasLista.appendChild(li);
+        });
+
+        horasContainer.classList.remove("d-none");
       })
       .catch(error => {
         if (error.response && error.response.status === 401) {
@@ -264,13 +378,10 @@
           window.location.href = "/login/";
           return;
         }
-
         if (error.response && error.response.status === 400) {
           const msg = error.response.data?.error || "Fecha inválida.";
-          mostrarError(msg);
-          return;
+          return mostrarError(msg);
         }
-
         mostrarError("Ocurrió un error al cargar las horas.");
       });
     });
@@ -278,7 +389,6 @@
     confirmarBtn.addEventListener('click', () => {
       const token = localStorage.getItem('authToken');
       const usuario_id = localStorage.getItem('usuario_id');
-
       if (!token || !usuario_id) {
         alert('Por favor, inicia sesión para agendar una cita.');
         window.location.href = '/login/';
@@ -286,19 +396,15 @@
       }
 
       const motivo = sessionStorage.getItem('motivoPaciente') || 'Consulta médica agendada por chatbot';
-
       const data = {
         usuario_id: parseInt(usuario_id),
         fecha: citaSeleccionada.fecha,
         hora: citaSeleccionada.hora,
-        motivo: motivo
+        motivo
       };
 
       axios.post("http://127.0.0.1:8000/api/agendamiento/citas/agendar/", data, {
-        headers: {
-          'Authorization': `Token ${token}`,
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Authorization': `Token ${token}`, 'Content-Type': 'application/json' }
       })
       .then(() => {
         localStorage.setItem('fechaCita', citaSeleccionada.fecha);
@@ -311,18 +417,17 @@
         if (error.response) {
           const { status, data } = error.response;
           const backendMsg = data?.error || data?.message || "";
-
           if (status === 401) {
             localStorage.removeItem("authToken");
             localStorage.removeItem("usuario_id");
             window.location.href = "/login/";
             return;
           }
-
           if (status === 400) {
             const msgLow = (backendMsg || "").toLowerCase();
             if (msgLow.includes("ya está tomado")) {
               alert("Lo siento, esa hora ya está tomada. Por favor, elige otra hora.");
+              fechaInput.dispatchEvent(new Event('change'));
             } else if (backendMsg) {
               alert(backendMsg);
             } else {
@@ -331,7 +436,6 @@
             return;
           }
         }
-
         alert("Ocurrió un error al agendar la cita. Por favor, verifica los datos o inténtalo de nuevo.");
       });
 

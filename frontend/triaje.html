@@ -82,6 +82,10 @@
 
     /* util */
     .row-meta{ color:var(--muted); font-size:.9rem; }
+
+    /* módulo autocuidado */
+    #mod-autocuidado .card-like{ background: rgba(255,255,255,.06); }
+    #mod-autocuidado ul{ margin-bottom: .5rem; }
   </style>
 </head>
 <body>
@@ -111,6 +115,20 @@
     </div>
 
     <div id="respuesta" class="mt-3"></div>
+
+    <!-- Módulo de Autocuidado (aparece SOLO si NO urgencia) -->
+    <section id="mod-autocuidado" class="mt-3 d-none">
+      <div class="card-like">
+        <h5 class="mb-2">Recomendaciones de autocuidado</h5>
+        <ul id="lista-recomendaciones" class="mb-2"></ul>
+        <div id="notas-recomendaciones" class="text-muted small mb-3"></div>
+        <div class="d-flex gap-2">
+          <button id="btn-copiar-recomendaciones" class="btn btn-outline-secondary btn-sm">Copiar</button>
+          <button id="btn-ir-agendar" class="btn btn-primary btn-sm">Agendar una consulta</button>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
@@ -161,6 +179,13 @@
     const btnAtras = document.getElementById('btn-atras');
     const barra = document.getElementById('barra');
 
+    // Elementos módulo autocuidado
+    const modAutocuidado = document.getElementById('mod-autocuidado');
+    const ulRec = document.getElementById('lista-recomendaciones');
+    const notasRec = document.getElementById('notas-recomendaciones');
+    const btnCopiar = document.getElementById('btn-copiar-recomendaciones');
+    const btnAgendar = document.getElementById('btn-ir-agendar');
+
     function render() {
       qText.textContent = preguntas[i];
       progreso.textContent = `Pregunta ${i+1} de ${preguntas.length}`;
@@ -191,7 +216,82 @@
       }
     });
 
-    // Envío al backend (sin cambios)
+    // === NUEVO: registrar sesión en el backend ===
+    async function registrarSesionTriaje(respuestasMap, urgente, score, recomendaciones = []) {
+      const token = localStorage.getItem("authToken");
+      try {
+        await axios.post(
+          "/api/chatbot/sesiones/crear/",
+          { respuestas: respuestasMap, urgente, score, recomendaciones },
+          { headers: { 'Authorization': `Token ${token}` } }
+        );
+      } catch (e) {
+        console.warn("No se pudo registrar la sesión de triaje:", e?.response?.data || e.message);
+      }
+    }
+
+    // Petición de recomendaciones al backend (nuevo)
+    async function cargarRecomendaciones(respuestasPayload) {
+      const token = localStorage.getItem("authToken");
+      try {
+        // Si tienes edad/embarazo/comorbilidades, pásalos aquí:
+        const body = {
+          respuestas: respuestasPayload,
+          // edad: 33,
+          // embarazada: false,
+          // comorbilidades: ["asma"]
+        };
+
+        const rec = await axios.post(
+          "/api/chatbot/recomendaciones/",
+          body,
+          { headers: { 'Authorization': `Token ${token}` } }
+        );
+
+        // Render UI
+        const data = rec.data || {};
+        ulRec.innerHTML = "";
+        (data.recomendaciones || []).forEach(txt => {
+          const li = document.createElement("li");
+          li.textContent = txt;
+          ulRec.appendChild(li);
+        });
+
+        notasRec.innerHTML = "";
+        if (data.notas && data.notas.length){
+          notasRec.innerHTML = data.notas.map(n => `• ${n}`).join("<br>");
+        }
+
+        // Acciones
+        btnCopiar.onclick = async () => {
+          const texto = [
+            "Recomendaciones de autocuidado:",
+            ...Array.from(ulRec.querySelectorAll("li")).map(li => `• ${li.textContent}`),
+            ...(notasRec.textContent ? ["", "Notas:", notasRec.textContent] : [])
+          ].join("\n");
+          try { await navigator.clipboard.writeText(texto); alert("Recomendaciones copiadas ✅"); }
+          catch { alert("No se pudieron copiar automáticamente. Copia manualmente."); }
+        };
+        btnAgendar.onclick = () => { window.location.href = "/agendamiento/"; };
+
+        // === NUEVO: registrar sesión NO urgente con recomendaciones ===
+        const recomendacionesPlano = Array.from(ulRec.querySelectorAll('li')).map(li => li.textContent);
+        registrarSesionTriaje(respuestasPayload, false, undefined, recomendacionesPlano);
+
+        modAutocuidado.classList.remove("d-none");
+        document.getElementById("respuesta").innerHTML =
+          `<div class="alert alert-success">No presenta criterios de urgencia. Revisa estas recomendaciones antes de agendar.</div>`;
+
+      } catch (err) {
+        // Si el backend devuelve 400 porque detectó urgencia al revalidar,
+        // lo mostramos y no renderizamos el módulo.
+        const msg = err.response?.data?.error || 'No se pudieron cargar las recomendaciones.';
+        document.getElementById("respuesta").innerHTML =
+          `<div class="alert alert-danger">${msg}</div>`;
+      }
+    }
+
+    // Envío al backend (tu flujo actual) + integración de recomendaciones
     function enviarTriaje() {
       const usuario_id = localStorage.getItem("usuario_id");
       const token = localStorage.getItem("authToken");
@@ -202,26 +302,34 @@
         return;
       }
 
-      const data = { usuario_id: parseInt(usuario_id) };
-      keys.forEach((k, idx) => { data[k] = !!respuestas[idx]; });
+      const payloadRegistrar = { usuario_id: parseInt(usuario_id) };
+      keys.forEach((k, idx) => { payloadRegistrar[k] = !!respuestas[idx]; });
 
-      axios.post("http://127.0.0.1:8000/api/usuarios/registrar-sintoma/", data, {
+      axios.post("http://127.0.0.1:8000/api/usuarios/registrar-sintoma/", payloadRegistrar, {
         headers: { 'Authorization': `Token ${token}` }
       })
       .then(res => {
         const resultado = res.data.resultado;
         const esUrgencia = res.data.urgente === true;
 
-        document.getElementById("respuesta").innerHTML =
-          `<div class="alert alert-success">${resultado}</div>`;
+        // Mapa de respuestas para sesiones/recomendaciones
+        const respuestasPayload = {};
+        keys.forEach((k, idx) => { respuestasPayload[k] = !!respuestas[idx]; });
 
-        setTimeout(() => {
-          if (esUrgencia) {
-            window.location.href = "/traslado_urgente/";
-          } else {
-            window.location.href = "/agendamiento/";
-          }
-        }, 1000);
+        if (esUrgencia) {
+          document.getElementById("respuesta").innerHTML =
+            `<div class="alert alert-danger">${resultado}</div>`;
+
+          // === NUEVO: registrar sesión URGENTE sin recomendaciones
+          registrarSesionTriaje(respuestasPayload, true, undefined, []);
+
+          setTimeout(() => { window.location.href = "/traslado_urgente/"; }, 800);
+          return;
+        }
+
+        // NO URGENCIA → pedimos recomendaciones usando el MISMO set de respuestas
+        // document.getElementById('formulario-preguntas').classList.add('d-none'); // opcional
+        cargarRecomendaciones(respuestasPayload);
       })
       .catch(err => {
         const msg = err.response?.data?.error || 'Error desconocido. Revisa los datos enviados.';
